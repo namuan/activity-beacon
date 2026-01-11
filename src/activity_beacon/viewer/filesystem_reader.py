@@ -48,13 +48,13 @@ class FileSystemReader:
         if not month_dir.name.isdigit() or len(month_dir.name) != MONTH_DIGITS:
             return results
         for day_dir in sorted(month_dir.iterdir()):
-            results.extend(FileSystemReader._process_day_dir(day_dir, year_dir, month_dir))
+            results.extend(
+                FileSystemReader._process_day_dir(day_dir, year_dir, month_dir)
+            )
         return results
 
     @staticmethod
-    def _process_day_dir(
-        day_dir: Path, year_dir: Path, month_dir: Path
-    ) -> list[date]:
+    def _process_day_dir(day_dir: Path, year_dir: Path, month_dir: Path) -> list[date]:
         """Process a day directory and return available date if valid."""
         if not day_dir.is_dir():
             return []

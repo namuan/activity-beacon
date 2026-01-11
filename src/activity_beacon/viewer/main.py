@@ -110,9 +110,7 @@ class MainWindow(QMainWindow):
 
     def on_date_selected(self, date: QDate) -> None:
         self._current_date = date
-        py_date = datetime(
-            year=date.year(), month=date.month(), day=date.day()
-        ).date()
+        py_date = datetime(year=date.year(), month=date.month(), day=date.day()).date()
 
         self.statusBar().showMessage("Loading video…", 2000)
         video_path = self._fs.get_video_path(py_date)
