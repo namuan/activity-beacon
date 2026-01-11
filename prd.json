@@ -204,7 +204,7 @@
         "Tests pass for valid and invalid JSONL data"
       ],
       "priority": 13,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
