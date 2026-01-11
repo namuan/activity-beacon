@@ -100,3 +100,40 @@ Changes in window_data_timeline.py:
 - Pre-commit hooks include basedpyright which may have pre-existing type checking errors unrelated to ruff linting
 
 ---
+
+## 2026-01-11 - US-001
+Thread: Local Development
+
+### Summary
+Implemented foundational project structure for the ActivityBeacon Screenshot Capture System.
+
+### Files Changed
+- src/activity_beacon/logging.py (new)
+- src/activity_beacon/window_tracking/data.py (new)
+- src/activity_beacon/window_tracking/__init__.py (new)
+- src/activity_beacon/screenshot/__init__.py (new)
+- src/activity_beacon/file_storage/__init__.py (new)
+- tests/conftest.py (new)
+- tests/test_data_classes.py (new)
+- pyproject.toml (modified - fixed coverage paths)
+
+### Changes
+- Created core module structure with screenshot, window_tracking, and file_storage packages
+- Defined frozen dataclasses: WindowInfo, FocusedAppData, WindowDataEntry with proper type hints
+- Implemented logging module with daily rotating log files in ~/.logs/activity-beacon/
+- Added pytest fixtures for testing window data classes
+- Created comprehensive tests for all data classes (7 tests passing)
+
+### Quality Results
+- basedpyright: 0 errors on new files
+- ruff: All checks passed on new files
+- pytest: 7 tests passed (100%)
+- window_tracking/data.py coverage: 93.55%
+
+### Learnings for Future Iterations
+- Frozen dataclasses with datetime fields need __post_init__ to handle tzinfo normalization
+- Pytest fixtures in conftest.py need the package to be installed in editable mode to import correctly
+- Coverage paths in pyproject.toml must match the actual package name for pytest-cov to work
+- New modules need __init__.py files even if empty to be recognized as packages
+
+---

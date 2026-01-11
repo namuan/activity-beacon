@@ -264,8 +264,8 @@ addopts = [
     "--strict-config",
     "-W error",  # STRICT: Treat warnings as errors (catch deprecations early)
     "--tb=short",
-    "--cov=delta_spread/domain",
-    "--cov=delta_spread/services",
+    "--cov=activity_beacon",
+    "--cov=activity_beacon.window_tracking",
     "--cov-report=term-missing:skip-covered",
     "--cov-report=html",
     "--cov-report=xml",
