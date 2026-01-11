@@ -17,6 +17,10 @@
       ],
       "priority": 1,
       "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
       "title": "Fix filesystem_reader.py linting errors",
       "description": "As a developer, I need to fix linting errors in filesystem_reader.py by renaming imports, reducing complexity, and replacing magic numbers with constants.",
       "acceptanceCriteria": [
@@ -29,6 +33,10 @@
       ],
       "priority": 2,
       "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
       "title": "Fix main.py linting errors",
       "description": "As a developer, I need to fix linting errors in main.py by refactoring complex methods, renaming event handlers, and adding type annotations.",
       "acceptanceCriteria": [
@@ -40,6 +48,10 @@
       ],
       "priority": 3,
       "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
       "title": "Fix video_player.py linting errors",
       "description": "As a developer, I need to fix linting errors in video_player.py by refactoring __init__, converting methods to static, replacing magic numbers, and reducing nesting.",
       "acceptanceCriteria": [
@@ -54,6 +66,10 @@
       ],
       "priority": 4,
       "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
       "title": "Fix window_data_parser.py linting errors",
       "description": "As a developer, I need to fix linting errors in window_data_parser.py by reducing nesting and converting methods to static methods.",
       "acceptanceCriteria": [
@@ -64,7 +80,7 @@
         "No ruff errors in window_data_parser.py"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -81,3 +97,7 @@
       ],
       "priority": 6,
       "passes": true,
+      "notes": ""
+    }
+  ]
+}
