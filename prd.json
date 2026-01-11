@@ -108,7 +108,7 @@
         "Tests pass for directory creation and naming"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
