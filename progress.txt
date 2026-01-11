@@ -194,3 +194,58 @@ Implemented ImageProcessor class for multi-monitor screenshot stitching with sca
   - `@staticmethod` for methods that don't use `self`
   - Use `Mapping` type for flexible dict-like parameters
   - Add `# type: ignore[reportMissingSuperCall]` for classes without parent class
+
+---
+
+## 2026-01-11 - US-004
+Thread: Local Development
+
+### Summary
+Implemented ChangeDetector class for pixel-level analysis to detect changes between consecutive screenshots using numpy-based pixel comparison.
+
+### Files Changed
+- src/activity_beacon/screenshot/change_detector.py (new)
+- tests/test_change_detector.py (new)
+
+### Changes
+- Created ChangeDetector class with:
+  - `has_changed()` - detects if current image differs from previous beyond threshold
+  - `calculate_difference_percentage()` - calculates percentage of changed pixels
+  - Configurable threshold (default: 10) for pixel difference sensitivity
+  - Uses numpy arrays for efficient pixel-level comparison
+  - Supports composite (stitched) images
+  - Returns True on first capture (no previous image)
+  - Returns True on image size mismatch
+  - Error handling with last_error_msg attribute
+- Implemented with numpy int16 conversion to avoid overflow in difference calculation
+- Uses np.max() to find maximum pixel difference across all channels
+- Added 20 comprehensive tests covering:
+  - Threshold behavior (below, at boundary, above)
+  - Edge cases (no previous image, size mismatch, single pixel change)
+  - Difference percentage calculation
+  - Error handling
+  - Different color channel detection
+  - Gradient and composite image support
+
+### Quality Results
+- basedpyright: 0 errors
+- ruff: All checks passed
+- pytest: 20 tests passed (100%)
+- change_detector.py coverage: 85.45%
+
+### Learnings for Future Iterations
+- NumPy types require careful handling in basedpyright - use `# type: ignore[reportAny]` for np.max() return values
+- Convert images to int16 before subtraction to avoid uint8 overflow
+- Use specific exception types (ValueError, TypeError, AttributeError) instead of bare Exception
+- On error in has_changed(), return True to avoid missing captures (fail-safe behavior)
+- The `# type: ignore[no-untyped-def]` is needed for __init__ methods in simple classes
+- NumPy comparison operations return boolean ndarray which needs conversion to Python bool
+
+**Learnings for future iterations:**
+  - Use `# type: ignore[reportAny]` for numpy type inference issues
+  - Convert to int16 before pixel difference to prevent uint8 overflow
+  - Avoid bare Exception - use specific exception types
+  - Fail-safe pattern: return True on errors to avoid missing captures
+  - NumPy max() returns numpy types that need explicit int() conversion for type safety
+
+---
