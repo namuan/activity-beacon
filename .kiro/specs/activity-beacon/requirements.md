@@ -7,13 +7,10 @@ ActivityBeacon is a macOS-native screenshot automation tool that captures multi-
 ## Glossary
 
 - **Capture_Daemon**: The macOS menu bar application that periodically captures screenshots
-- **Timelapse_Generator**: The component that creates MP4 videos from daily screenshots
-- **Viewer_GUI**: The PyQt6 application for reviewing daily timelapses with focus timeline
 - **Screenshot_Pipeline**: The multi-monitor screenshot capture and processing system
 - **Window_Data**: Metadata about active applications and visible windows
 - **Change_Detection**: Algorithm that determines if a screenshot differs significantly from the previous one
 - **JSONL_Format**: Newline-delimited JSON format where each line is a complete JSON object
-- **Focus_Timeline**: Visual representation of window focus events over time
 
 ## Requirements
 
@@ -66,33 +63,7 @@ ActivityBeacon is a macOS-native screenshot automation tool that captures multi-
 4. WHEN the screen becomes unlocked, THE Capture_Daemon SHALL resume screenshot capture automatically
 5. THE Capture_Daemon SHALL provide a menu bar icon using PyQt6 with scheduling controls
 
-### Requirement 5: Timelapse Video Generation
-
-**User Story:** As a user reviewing my daily activity, I want to generate timelapse videos from screenshots, so that I can quickly review an entire day's work.
-
-#### Acceptance Criteria
-
-1. WHEN generating a timelapse, THE Timelapse_Generator SHALL create MP4 videos from daily screenshots using ffmpeg
-2. WHEN ffmpeg is not available, THE Timelapse_Generator SHALL check for its presence using shutil.which and report an error if missing
-3. WHEN creating timelapses, THE Timelapse_Generator SHALL support configurable frame rates with a default of 30 FPS
-4. WHEN the OVERWRITE flag is true, THE Timelapse_Generator SHALL regenerate existing videos
-5. WHEN the DELETE flag is true, THE Timelapse_Generator SHALL remove source screenshots after successful video encoding
-6. THE Timelapse_Generator SHALL save generated videos in the same date directory as the source screenshots
-
-### Requirement 6: Viewer Application
-
-**User Story:** As a user reviewing my activity, I want a graphical interface to browse and view daily timelapses with focus information, so that I can analyze my productivity patterns.
-
-#### Acceptance Criteria
-
-1. WHEN browsing dates, THE Viewer_GUI SHALL display a calendar widget with visual indicators for available data
-2. WHEN a date has screenshots, THE Viewer_GUI SHALL show a blue dot indicator on the calendar
-3. WHEN a date has a generated timelapse video, THE Viewer_GUI SHALL show the date in green bold text
-4. WHEN a date is selected, THE Viewer_GUI SHALL load and display the corresponding timelapse video if available
-5. WHEN displaying focus data, THE Viewer_GUI SHALL show a timeline of window focus events synchronized with the video playback
-6. THE Viewer_GUI SHALL communicate between components using PyQt signals for date selection, error handling, and loading states
-
-### Requirement 7: Error Handling and Logging
+### Requirement 5: Error Handling and Logging
 
 **User Story:** As a system administrator, I want comprehensive error handling and logging, so that I can troubleshoot issues and monitor system health.
 
@@ -104,7 +75,7 @@ ActivityBeacon is a macOS-native screenshot automation tool that captures multi-
 4. WHEN formatting log entries, THE Capture_Daemon SHALL use the format "YYYY-MM-DD HH:MM:SS - LEVEL - message"
 5. THE Capture_Daemon SHALL provide both file and console log handlers for debugging
 
-### Requirement 8: Data Format Validation
+### Requirement 6: Data Format Validation
 
 **User Story:** As a developer maintaining the system, I want strict data format validation, so that the system handles data consistently and prevents corruption.
 
@@ -116,7 +87,7 @@ ActivityBeacon is a macOS-native screenshot automation tool that captures multi-
 4. WHEN processing timestamps, THE WindowDataParser SHALL validate ISO format datetime strings
 5. THE WindowDataParser SHALL NOT attempt to parse window_data.jsonl as a JSON array
 
-### Requirement 9: Performance and Resource Management
+### Requirement 7: Performance and Resource Management
 
 **User Story:** As a user running the application continuously, I want efficient resource usage, so that the system doesn't impact my computer's performance.
 
