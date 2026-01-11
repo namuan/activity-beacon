@@ -4,6 +4,8 @@
 - Magic numbers should be extracted to module-level constants for maintainability
 - Complex methods can be refactored by extracting helper methods to reduce nesting and cyclomatic complexity
 - Use keyword arguments (value=...) for boolean signal emissions to comply with FBT003 rules
+- Frozen dataclasses with datetime fields need __post_init__ to handle tzinfo normalization
+- New modules need __init__.py files even if empty to be recognized as Python packages
 
 ---
 
