@@ -6,6 +6,9 @@
 - Use keyword arguments (value=...) for boolean signal emissions to comply with FBT003 rules
 - Frozen dataclasses with datetime fields need __post_init__ to handle tzinfo normalization
 - New modules need __init__.py files even if empty to be recognized as Python packages
+- PyObjC libraries (AppKit, Quartz, Cocoa) don't have type stubs - use `# type: ignore[import-untyped]` and `typing.cast()` for basedpyright
+- Always add `super().__init__()` in __init__ methods to avoid reportMissingSuperCall errors
+- Use datetime.UTC instead of datetime.timezone.utc (ruff UP017 auto-fix)
 
 ---
 
@@ -247,5 +250,56 @@ Implemented ChangeDetector class for pixel-level analysis to detect changes betw
   - Avoid bare Exception - use specific exception types
   - Fail-safe pattern: return True on errors to avoid missing captures
   - NumPy max() returns numpy types that need explicit int() conversion for type safety
+
+---
+
+## 2026-01-11 - US-005
+Thread: Local Development
+
+### Summary
+Implemented FocusTracker class for active application detection using AppKit.NSWorkspace. The class tracks the currently focused application, its process ID, and handles edge cases gracefully.
+
+### Files Changed
+- src/activity_beacon/window_tracking/focus_tracker.py (new)
+- tests/test_focus_tracker.py (new)
+- prd.json (updated US-005 passes: true)
+
+### Changes
+- Created FocusTracker class with:
+  - `get_focused_application()` - returns FocusedAppData with app name, PID, window name, and UTC timestamp
+  - Uses AppKit.NSWorkspace for macOS application detection
+  - Returns placeholder values ("Unknown", pid=0) when no active app is detected
+  - Handles missing or invalid window states gracefully
+  - Window name returns None (NSWorkspace doesn't provide window titles directly)
+  - Uses `# type: ignore[import-untyped]` for AppKit import (no type stubs available)
+  - Uses `typing.cast()` to explicitly type PyObjC method returns for basedpyright
+  - Added `super().__init__()` call to satisfy reportMissingSuperCall
+- Added comprehensive tests:
+  - Initialization test
+  - Return type validation
+  - Valid app name and PID checks
+  - UTC timezone verification
+  - Timestamp recency validation
+  - Consistency checks for consecutive calls
+  - Window name handling (expects None)
+- All 8 tests pass successfully
+
+### Quality Results
+- basedpyright: 0 errors (for focus_tracker.py and test file)
+- ruff: All checks passed
+- pytest: 8 tests passed (100%)
+- focus_tracker.py coverage: 90.48%
+
+### Learnings for Future Iterations
+- PyObjC (AppKit, Quartz, Cocoa) doesn't have type stubs - use `# type: ignore[import-untyped]`
+- Use `typing.cast()` to explicitly type PyObjC method returns for basedpyright strict mode
+- Use `# type: ignore[no-untyped-call]` for PyObjC method calls to suppress unknown type errors
+- NSWorkspace.sharedWorkspace() returns shared workspace instance
+- frontmostApplication() returns the currently active application
+- localizedName() returns the user-facing application name
+- processIdentifier() returns the PID of the application
+- NSWorkspace API doesn't provide window titles - need Quartz.CGWindowListCopyWindowInfo for that (WindowEnumerator)
+- Always add `super().__init__()` in __init__ methods to avoid reportMissingSuperCall errors
+- Use datetime.UTC instead of datetime.timezone.utc (ruff UP017 auto-fix)
 
 ---
