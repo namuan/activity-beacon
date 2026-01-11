@@ -107,18 +107,6 @@ max-public-methods = 35  # Controller classes may have many handlers (PLR0904)
     "PLC0415", # Allow local imports for optional deps
     "PLW0108", # Allow simple lambdas in monkeypatches
 ]
-"activity_beacon/domain/models.py" = [
-    "TCH003",  # Allow runtime import of 'date' needed by Pydantic
-]
-"activity_beacon/ui/chart_widget.py" = [
-    "N802",    # Qt event handler naming (paintEvent)
-]
-"activity_beacon/ui/option_badge.py" = [
-    "N802",    # Qt event handler naming (paintEvent)
-]
-"activity_beacon/ui/strike_ruler.py" = [
-    "N802",    # Qt event handler naming (paintEvent)
-]
 
 [tool.ruff.lint.isort]
 known-first-party = ["delta_spread"]

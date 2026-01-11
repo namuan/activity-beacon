@@ -38,6 +38,10 @@ run: ## Run the application
 	@echo "🚀 Running $(PROJECTNAME)"
 	@uv run python -m activity_beacon
 
+viewer: ## Run the viewer application
+	@echo "🚀 Running viewer"
+	@uv run python -m activity_beacon.viewer.main
+
 clean: ## Clean build artifacts
 	@echo "🚀 Removing build artifacts"
 	@find . -type f -name "*.pyc" -delete
