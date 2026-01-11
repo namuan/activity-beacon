@@ -32,8 +32,8 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["*"]
+where = ["src"]
+include = ["activity_beacon*"]
 exclude = ["tests*", "scripts*", "docs*", "examples*"]
 
 # ============================================================
@@ -107,16 +107,16 @@ max-public-methods = 35  # Controller classes may have many handlers (PLR0904)
     "PLC0415", # Allow local imports for optional deps
     "PLW0108", # Allow simple lambdas in monkeypatches
 ]
-"delta_spread/domain/models.py" = [
+"activity_beacon/domain/models.py" = [
     "TCH003",  # Allow runtime import of 'date' needed by Pydantic
 ]
-"delta_spread/ui/chart_widget.py" = [
+"activity_beacon/ui/chart_widget.py" = [
     "N802",    # Qt event handler naming (paintEvent)
 ]
-"delta_spread/ui/option_badge.py" = [
+"activity_beacon/ui/option_badge.py" = [
     "N802",    # Qt event handler naming (paintEvent)
 ]
-"delta_spread/ui/strike_ruler.py" = [
+"activity_beacon/ui/strike_ruler.py" = [
     "N802",    # Qt event handler naming (paintEvent)
 ]
 
@@ -299,7 +299,7 @@ markers = [
 # COVERAGE CONFIGURATION
 # ============================================================
 [tool.coverage.run]
-source = ["delta_spread/domain", "delta_spread/services"]
+source = ["activity_beacon"]
 branch = true  # STRICT: Enable branch coverage
 omit = [
     "*/tests/*",

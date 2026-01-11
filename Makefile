@@ -36,7 +36,7 @@ test-single: ## Run a single test file (usage: make test-single TEST=test_config
 
 run: ## Run the application
 	@echo "🚀 Running $(PROJECTNAME)"
-	@uv run python -m delta_spread
+	@uv run python -m activity_beacon
 
 clean: ## Clean build artifacts
 	@echo "🚀 Removing build artifacts"
