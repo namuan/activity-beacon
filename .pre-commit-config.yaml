@@ -38,11 +38,3 @@ repos:
         args: [ --fix ]
       - id: ruff-format # formatter
         types_or: [ python, pyi, jupyter, toml ]
-  - repo: local
-    hooks:
-      - id: basedpyright
-        name: basedpyright
-        entry: uv run basedpyright --level error
-        language: system
-        types: [python]
-        pass_filenames: false
