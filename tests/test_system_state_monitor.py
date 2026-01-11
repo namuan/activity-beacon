@@ -79,7 +79,7 @@ class TestSystemStateMonitor:
         }
         pause_func = MagicMock()
         monitor = SystemStateMonitor()
-        monitor.set_callbacks(pause_callback=pause_func)
+        monitor.set_callbacks(pause_func=pause_func)
 
         result = monitor.check_and_notify()
 

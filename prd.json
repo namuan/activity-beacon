@@ -156,8 +156,8 @@
         "Typecheck passes"
       ],
       "priority": 10,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "MenuBarController implemented with QSystemTrayIcon. Includes start/stop controls, interval configuration (10s, 30s, 60s, 120s, 300s), status display, and capture counter. Typechecks pass cleanly. Ready for integration with CaptureController in US-016."
     },
     {
       "id": "US-011",
