@@ -220,8 +220,8 @@
         "Tests pass for directory structure validation"
       ],
       "priority": 14,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented FileSystemReader with ValidationReport dataclass. Validates YYYY/MM/DD directory structure, screenshot naming (YYYYMMDD_HHMMSS.png), and window_data.jsonl file presence. All 21 tests passing with 91.18% coverage. Handles permission errors gracefully."
     },
     {
       "id": "US-015",
@@ -236,8 +236,8 @@
         "Tests pass for ISO format validation"
       ],
       "priority": 15,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented TimestampValidator class with configurable validation options. Created helper functions for timestamp parsing, formatting, and UTC conversion. All 29 tests passing with 97.56% coverage for the module."
     },
     {
       "id": "US-016",
@@ -252,8 +252,8 @@
         "Tests pass for component coordination"
       ],
       "priority": 16,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created CaptureController class with full component coordination. Implements timer-based capture cycle with configurable intervals, change detection to skip unchanged screens, automatic pause/resume on screen lock, callback system for lifecycle events, and proper error handling. All 36 tests passing with 92.98% coverage for the module."
     },
     {
       "id": "US-017",
@@ -268,8 +268,8 @@
         "Typecheck passes"
       ],
       "priority": 17,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented main entry point with CLI argument parsing (--interval, --output, --debug). Added configuration file loading from ~/.config/activity-beacon/config.toml with TOML support. Configured proper logging initialization and graceful shutdown handling for SIGTERM/SIGINT signals. All typechecks pass for the module."
     },
     {
       "id": "US-018",
@@ -284,8 +284,8 @@
         "Typecheck passes"
       ],
       "priority": 18,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created comprehensive integration test suite with 17 tests covering: complete capture cycle workflow, screenshot storage, window data collection, change detection, save modes, error recovery for capture/focus/image failures, system state handling (screen lock/unlock), multi-monitor support, callback system, and controller status. All tests pass with proper mocking of components. Fixed ruff ARG001/ARG002 unused parameter warnings and PLR0917 too-many-arguments warning by prefixing unused parameters with underscores."
     }
   ]
 }
