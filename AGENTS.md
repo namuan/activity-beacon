@@ -19,3 +19,4 @@
 - Use `uv sync` to install all project dependencies
 - Never use bare `python`, `python3`, or `pip` commands
 - All Python execution must go through `uv`
+- When adding system integration helpers (e.g., Quartz wrappers), prefer small, well-tested modules under `src/activity_beacon/system_state` to isolate platform-specific logic and to make tests easy to mock
