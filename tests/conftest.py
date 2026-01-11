@@ -1,5 +1,6 @@
 from collections.abc import Generator
 from datetime import datetime
+import logging
 from pathlib import Path
 
 import pytest
@@ -9,6 +10,37 @@ from activity_beacon.window_tracking.data import (
     WindowDataEntry,
     WindowInfo,
 )
+
+
+@pytest.fixture(autouse=True)
+def clear_logger_cache() -> Generator[None, None, None]:
+    """Clear the logger cache before and after each test to prevent test interference."""
+    from activity_beacon import logging as ab_logging
+
+    ab_logging.COMPONENT_LOGGERS.clear()
+
+    # Also clear Python's logging module loggers
+    for logger_name in list(logging.Logger.manager.loggerDict.keys()):
+        if logger_name.startswith("activity_beacon") or logger_name.startswith("test_"):
+            logger = logging.getLogger(logger_name)
+            # Close all handlers before clearing
+            for handler in logger.handlers[:]:
+                handler.close()
+                logger.removeHandler(handler)
+            logger.propagate = True
+
+    yield
+
+    # Clean up after test
+    ab_logging.COMPONENT_LOGGERS.clear()
+    for logger_name in list(logging.Logger.manager.loggerDict.keys()):
+        if logger_name.startswith("activity_beacon") or logger_name.startswith("test_"):
+            logger = logging.getLogger(logger_name)
+            # Close all handlers before clearing
+            for handler in logger.handlers[:]:
+                handler.close()
+                logger.removeHandler(handler)
+            logger.propagate = True
 
 
 @pytest.fixture

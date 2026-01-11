@@ -5,7 +5,18 @@ import uuid
 
 import pytest
 
-from activity_beacon.logging import get_level_name, get_logger, setup_logging
+from activity_beacon.logging import (
+    get_default_log_dir,
+    get_level_name,
+    get_logger,
+    setup_logging,
+)
+
+
+class TestGetDefaultLogDir:
+    def test_returns_correct_path(self) -> None:
+        expected = Path.home() / ".logs" / "activity-beacon"
+        assert get_default_log_dir() == expected
 
 
 class TestGetLevelName:
@@ -92,8 +103,8 @@ class TestGetLogger:
         log_file = next(iter(tmp_path.glob("*.log")))
         log_content = log_file.read_text().strip()
 
-        # Format: YYYY-MM-DD HH:MM:SS,mmm - LEVEL - message
-        pattern = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3} - INFO - test message"
+        # Format: YYYY-MM-DD HH:MM:SS - LEVEL - message
+        pattern = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} - INFO - test message"
         assert re.match(
             pattern, log_content
         ), f"Log line doesn't match pattern: {log_content}"
@@ -172,6 +183,10 @@ class TestSetupLogging:
 
     def test_loggers_use_same_log_directory(self, tmp_path: Path) -> None:
         loggers = setup_logging(tmp_path)
+
+        # Write a log message from each logger to ensure file is created
+        for logger_name, logger in loggers.items():
+            logger.info(f"Test message from {logger_name}")
 
         # Flush all handlers to ensure logs are written to file
         for logger in loggers.values():

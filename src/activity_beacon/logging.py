@@ -7,6 +7,11 @@ from typing import Literal
 COMPONENT_LOGGERS: dict[str, logging.Logger] = {}
 
 
+def get_default_log_dir() -> Path:
+    """Return the default log directory: ~/.logs/activity-beacon/"""
+    return Path.home() / ".logs" / "activity-beacon"
+
+
 def get_logger(name: str, log_dir: Path | None = None) -> logging.Logger:
     if name in COMPONENT_LOGGERS:
         return COMPONENT_LOGGERS[name]
@@ -15,6 +20,7 @@ def get_logger(name: str, log_dir: Path | None = None) -> logging.Logger:
     logger.setLevel(logging.DEBUG)
 
     log_format = "%(asctime)s - %(levelname)s - %(message)s"
+    date_format = "%Y-%m-%d %H:%M:%S"
 
     if log_dir is not None:
         log_dir = log_dir.expanduser()
@@ -25,13 +31,13 @@ def get_logger(name: str, log_dir: Path | None = None) -> logging.Logger:
 
         file_handler = logging.FileHandler(log_file, encoding="utf-8")
         file_handler.setLevel(logging.DEBUG)
-        file_handler.setFormatter(logging.Formatter(log_format))
+        file_handler.setFormatter(logging.Formatter(log_format, datefmt=date_format))
 
         logger.addHandler(file_handler)
 
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(logging.INFO)
-    console_handler.setFormatter(logging.Formatter(log_format))
+    console_handler.setFormatter(logging.Formatter(log_format, datefmt=date_format))
 
     logger.addHandler(console_handler)
 
