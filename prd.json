@@ -45,7 +45,7 @@
         "Tests pass for stitching with known multi-monitor configurations"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
