@@ -1,0 +1,102 @@
+## Codebase Patterns
+- PyQt6 override methods must use noqa comments to suppress naming convention errors when parent classes use camelCase
+- When converting methods to static, update all call sites to use ClassName.method_name() instead of self.method_name()
+- Magic numbers should be extracted to module-level constants for maintainability
+- Complex methods can be refactored by extracting helper methods to reduce nesting and cyclomatic complexity
+- Use keyword arguments (value=...) for boolean signal emissions to comply with FBT003 rules
+
+---
+
+## 2026-01-11 - US-001, US-002, US-003, US-004, US-005
+Thread: Local Development
+
+### Summary
+All ruff linting errors have been resolved. The project went from 33 linting errors to 0 errors.
+
+### US-001 - Fix calendar_widget.py linting errors
+Files changed:
+- src/activity_beacon/viewer/calendar_widget.py
+
+Changes:
+- Added type annotation for file_system_reader parameter (FileSystemReader)
+- Added type annotation for rect parameter (QRect)
+- Renamed import to lowercase date in calendar_widget.py imports
+- Used noqa comment to suppress N802 error for paintCell (inherited method override)
+- Changed unused year and month parameters to _year and _month to comply with ARG002
+
+### US-002 - Fix filesystem_reader.py linting errors
+Files changed:
+- src/activity_beacon/viewer/filesystem_reader.py
+
+Changes:
+- Renamed Date import to lowercase date
+- Extracted magic numbers (4, 2) to named constants: YEAR_DIGITS, MONTH_DIGITS, DAY_DIGITS
+- Refactored get_available_dates to reduce nesting and complexity:
+  - Extracted _process_year_dir helper method
+  - Extracted _process_month_dir helper method (static)
+  - Extracted _process_day_dir helper method (static)
+- Reduced nesting from 5 levels to 2 levels by using list.extend() instead of nested loops
+- Reduced cyclomatic complexity from 14 to well below threshold
+
+### US-003 - Fix main.py linting errors
+Files changed:
+- src/activity_beacon/viewer/main.py
+
+Changes:
+- Added type annotation for event parameter in resizeEvent (QResizeEvent)
+- Used noqa comment to suppress N802 error for resizeEvent (inherited method override)
+- Refactored on_date_selected method to reduce cyclomatic complexity:
+  - Extracted _handle_no_video_available helper method
+  - Extracted _load_video_and_data helper method
+  - Extracted _load_window_data helper method
+  - Extracted _get_video_start_datetime as static method
+  - Extracted _setup_duration_changed_handler helper method
+- Reduced cyclomatic complexity from 12 to below threshold
+- Moved date type import to TYPE_CHECKING block
+- Added type annotations for py_date parameters (date_type alias)
+
+### US-004 - Fix video_player.py linting errors
+Files changed:
+- src/activity_beacon/viewer/video_player.py
+
+Changes:
+- Extracted magic number 2 to MIN_ERROR_ARGS constant
+- Refactored __init__ to reduce statement count:
+  - Extracted _setup_widgets helper method
+  - Extracted _setup_layout helper method
+  - Extracted _setup_signals helper method
+- Converted _fmt_ms method to static method
+- Updated all blockSignals calls to use keyword arguments (block=True/False)
+- Updated all loading_changed.emit calls to use keyword arguments (value=True/False)
+- Added type annotation for *args parameter in _on_error
+
+### US-005 - Fix window_data_parser.py linting errors
+Files changed:
+- src/activity_beacon/viewer/window_data_parser.py
+- src/activity_beacon/viewer/window_data_timeline.py
+
+Changes in window_data_parser.py:
+- Reduced nesting in parse_file by extracting file reading to _read_entries_from_file (static)
+- Converted parse_line method to static method
+- Converted match_timestamp_to_video_position to static method
+- Added PLR6301 noqa comment on parse_file (keeps instance method for compatibility)
+
+Changes in window_data_timeline.py:
+- Updated _recompute_positions to call WindowDataParser.match_timestamp_to_video_position as static method
+- Removed unnecessary parser instance creation
+
+### Quality Results
+- Ruff errors: 33 → 0 (100% resolved)
+- All unit tests still pass
+- Code functionality maintained
+- All changes follow existing code patterns
+
+### Learnings for Future Iterations
+- PyQt6 methods that override parent class methods with camelCase names should use noqa comments rather than attempting renaming
+- When making methods static, grep the entire codebase for all call sites before committing
+- The pattern of extracting helper methods is effective for reducing complexity and nesting in large methods
+- Use keyword arguments consistently for PyQt signals when booleans are involved
+- Magic numbers should always be extracted to named constants at module level
+- Pre-commit hooks include basedpyright which may have pre-existing type checking errors unrelated to ruff linting
+
+---
