@@ -49,25 +49,32 @@ class WindowDataEntry:
 
 
 class WindowDataParser:
-    def parse_file(self, file_path: Path) -> list[WindowDataEntry]:
+    def parse_file(self, file_path: Path) -> list[WindowDataEntry]:  # noqa: PLR6301
         entries: list[WindowDataEntry] = []
         if not file_path.exists() or not file_path.is_file():
             return entries
         try:
-            with file_path.open("r", encoding="utf-8") as f:
-                for line in f:
-                    entry = self.parse_line(line)
-                    if entry is not None:
-                        entries.append(entry)
+            return WindowDataParser._read_entries_from_file(file_path)
         except PermissionError as e:
             logging.error("Permission error reading window data: %s", e)
             return []
         except OSError as e:
             logging.error("OS error reading window data: %s", e)
             return []
+
+    @staticmethod
+    def _read_entries_from_file(file_path: Path) -> list[WindowDataEntry]:
+        """Read window data entries from a file."""
+        entries: list[WindowDataEntry] = []
+        with file_path.open("r", encoding="utf-8") as f:
+            for line in f:
+                entry = WindowDataParser.parse_line(line)
+                if entry is not None:
+                    entries.append(entry)
         return entries
 
-    def parse_line(self, line: str) -> WindowDataEntry | None:
+    @staticmethod
+    def parse_line(line: str) -> WindowDataEntry | None:
         try:
             obj = json.loads(line)
         except json.JSONDecodeError:
@@ -118,8 +125,8 @@ class WindowDataParser:
             windows=windows,
         )
 
+    @staticmethod
     def match_timestamp_to_video_position(
-        self,
         timestamp: datetime,
         video_start: datetime,
         video_duration_ms: int,
