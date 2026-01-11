@@ -26,7 +26,10 @@ from .window_data_parser import WindowDataParser
 from .window_data_timeline import WindowDataTimeline
 
 if TYPE_CHECKING:
+    from datetime import date as date_type
+
     from PyQt6.QtCore import QDate
+    from PyQt6.QtGui import QResizeEvent
 
     from .window_data_parser import WindowDataEntry
 
@@ -107,24 +110,45 @@ class MainWindow(QMainWindow):
 
     def on_date_selected(self, date: QDate) -> None:
         self._current_date = date
-        py_date = datetime(year=date.year(), month=date.month(), day=date.day()).date()
+        py_date = datetime(
+            year=date.year(), month=date.month(), day=date.day()
+        ).date()
 
         self.statusBar().showMessage("Loading video…", 2000)
         video_path = self._fs.get_video_path(py_date)
         if video_path is None:
-            with contextlib.suppress(Exception):
-                logging.warning("No timelapse video available for date %s", py_date)
-            self.display_error("No timelapse video available for this date")
-            if self._video_player:
-                self._video_player.pause()
-            if self._timeline:
-                self._timeline.clear()
+            self._handle_no_video_available(py_date)
             return
 
+        self._load_video_and_data(video_path, date, py_date)
+
+    def _handle_no_video_available(self, py_date: date_type) -> None:
+        """Handle case when no video is available for the selected date."""
+        with contextlib.suppress(Exception):
+            logging.warning("No timelapse video available for date %s", py_date)
+        self.display_error("No timelapse video available for this date")
+        if self._video_player:
+            self._video_player.pause()
+        if self._timeline:
+            self._timeline.clear()
+
+    def _load_video_and_data(
+        self, video_path: Path, date: QDate, py_date: date_type
+    ) -> None:
+        """Load video and window data for the selected date."""
         if self._video_player:
             self._video_player.load_video(video_path)
             self._video_player.play()
 
+        entries = self._load_window_data(py_date)
+        video_start_dt = MainWindow._get_video_start_datetime(entries, date)
+
+        if self._timeline and self._video_player and video_start_dt:
+            self._timeline.bind_to_player(self._video_player, video_start_dt)
+            self._setup_duration_changed_handler(video_start_dt)
+
+    def _load_window_data(self, py_date: date_type) -> list[WindowDataEntry]:
+        """Load window data for the selected date."""
         entries: list[WindowDataEntry] = []
         wd_path = self._fs.get_window_data_path(py_date)
         if wd_path is not None:
@@ -137,18 +161,19 @@ class MainWindow(QMainWindow):
                 self._progress.hide()
         elif self._timeline:
             self._timeline.clear()
+        return entries
 
-        video_start_dt: datetime | None = None
+    @staticmethod
+    def _get_video_start_datetime(
+        entries: list[WindowDataEntry], date: QDate
+    ) -> datetime | None:
+        """Get the video start datetime based on entries or date."""
         if entries:
-            video_start_dt = entries[0].timestamp
-        else:
-            video_start_dt = datetime(
-                year=date.year(), month=date.month(), day=date.day()
-            )
+            return entries[0].timestamp
+        return datetime(year=date.year(), month=date.month(), day=date.day())
 
-        if self._timeline and self._video_player and video_start_dt:
-            self._timeline.bind_to_player(self._video_player, video_start_dt)
-
+    def _setup_duration_changed_handler(self, video_start_dt: datetime) -> None:
+        """Setup the duration changed signal handler."""
         if self._video_player and hasattr(self._video_player, "_player"):
             self._video_player._player.durationChanged.connect(
                 lambda dur: self._timeline
@@ -171,7 +196,7 @@ class MainWindow(QMainWindow):
         if self._timeline:
             self._timeline.load_window_data(window_data)
 
-    def resizeEvent(self, event) -> None:
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802
         super().resizeEvent(event)
 
 

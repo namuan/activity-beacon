@@ -87,9 +87,8 @@ class WindowDataTimeline(QWidget):
         player.position_changed.connect(self.update_current_position)
 
     def _recompute_positions(self) -> None:
-        parser = WindowDataParser()
         self._entry_positions = [
-            parser.match_timestamp_to_video_position(
+            WindowDataParser.match_timestamp_to_video_position(
                 e.timestamp, self._video_start, self._video_duration_ms
             )
             for e in self._entries

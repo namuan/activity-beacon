@@ -14,6 +14,8 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+MIN_ERROR_ARGS = 2
+
 
 class VideoPlayerWidget(QWidget):
     position_changed = pyqtSignal(int)
@@ -33,6 +35,12 @@ class VideoPlayerWidget(QWidget):
         )
         self._video.setMinimumSize(320, 240)
 
+        self._setup_widgets()
+        self._setup_layout()
+        self._setup_signals()
+
+    def _setup_widgets(self) -> None:
+        """Initialize UI widgets."""
         self._play_btn = QPushButton("Play")
         self._play_btn.setToolTip("Play/Pause video")
         self._position_slider = QSlider(Qt.Orientation.Horizontal)
@@ -48,6 +56,8 @@ class VideoPlayerWidget(QWidget):
         self._position_label.setToolTip("Current playback position")
         self._status_label = QLabel()
 
+    def _setup_layout(self) -> None:
+        """Setup the layout."""
         top = QVBoxLayout()
         top.setContentsMargins(0, 0, 0, 0)
         top.setSpacing(0)
@@ -71,6 +81,8 @@ class VideoPlayerWidget(QWidget):
         ctrl_v.addWidget(self._status_label)
         self._controls.setLayout(ctrl_v)
 
+    def _setup_signals(self) -> None:
+        """Setup signal connections."""
         self._play_btn.clicked.connect(self._toggle_play)
         self._position_slider.sliderMoved.connect(self._on_slider_moved)
         self._volume_slider.valueChanged.connect(self._on_volume_changed)
@@ -87,7 +99,7 @@ class VideoPlayerWidget(QWidget):
             self._status_label.setText("Video not available")
             return
         self._status_label.setText("")
-        self.loading_changed.emit(True)
+        self.loading_changed.emit(True)  # noqa: FBT003
         self._player.setSource(QUrl.fromLocalFile(str(video_path)))
         self._player.setPosition(0)
         self._position_slider.setValue(0)
@@ -124,15 +136,15 @@ class VideoPlayerWidget(QWidget):
         self._audio.setVolume(val / 100.0)
 
     def _on_position_changed(self, pos: int) -> None:
-        self._position_slider.blockSignals(True)
+        self._position_slider.blockSignals(True)  # noqa: FBT003
         self._position_slider.setValue(pos)
-        self._position_slider.blockSignals(False)
+        self._position_slider.blockSignals(False)  # noqa: FBT003
         self.position_changed.emit(pos)
-        self._position_label.setText(self._fmt_ms(pos))
+        self._position_label.setText(VideoPlayerWidget._fmt_ms(pos))
 
     def _on_duration_changed(self, dur: int) -> None:
         self._position_slider.setRange(0, dur)
-        self._duration_label.setText(self._fmt_ms(dur))
+        self._duration_label.setText(VideoPlayerWidget._fmt_ms(dur))
 
     def _on_playback_state_changed(self, st: QMediaPlayer.PlaybackState) -> None:
         self.playback_state_changed.emit(st)
@@ -140,7 +152,8 @@ class VideoPlayerWidget(QWidget):
             "Pause" if st == QMediaPlayer.PlaybackState.PlayingState else "Play"
         )
 
-    def _fmt_ms(self, ms: int) -> str:
+    @staticmethod
+    def _fmt_ms(ms: int) -> str:
         s = max(0, int(ms // 1000))
         m = s // 60
         r = s % 60
@@ -155,9 +168,9 @@ class VideoPlayerWidget(QWidget):
             msg = "Error loading video"
             self._status_label.setText(msg)
             self.error_occurred.emit(msg)
-            self.loading_changed.emit(False)
+            self.loading_changed.emit(False)  # noqa: FBT003
         elif st == QMediaPlayer.MediaStatus.LoadingMedia:
-            self.loading_changed.emit(True)
+            self.loading_changed.emit(True)  # noqa: FBT003
         elif st in {
             QMediaPlayer.MediaStatus.BufferedMedia,
             QMediaPlayer.MediaStatus.StalledMedia,
@@ -166,15 +179,15 @@ class VideoPlayerWidget(QWidget):
             QMediaPlayer.MediaStatus.BufferingMedia,
             QMediaPlayer.MediaStatus.BufferedMedia,
         }:
-            self.loading_changed.emit(False)
+            self.loading_changed.emit(False)  # noqa: FBT003
 
-    def _on_error(self, *args) -> None:
+    def _on_error(self, *args: str) -> None:
         msg = "Error loading video"
-        if len(args) >= 2 and isinstance(args[1], str):
+        if len(args) >= MIN_ERROR_ARGS and isinstance(args[1], str):
             msg = args[1]
         self._status_label.setText(msg)
         self.error_occurred.emit(msg)
-        self.loading_changed.emit(False)
+        self.loading_changed.emit(False)  # noqa: FBT003
 
     def get_controls_widget(self) -> QWidget:
         return self._controls

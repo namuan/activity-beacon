@@ -1,6 +1,8 @@
-from PyQt6.QtCore import QDate, pyqtSignal
+from PyQt6.QtCore import QDate, QRect, pyqtSignal
 from PyQt6.QtGui import QColor, QPainter, QPen, QTextCharFormat
 from PyQt6.QtWidgets import QCalendarWidget
+
+from .filesystem_reader import FileSystemReader
 
 
 class CalendarWidget(QCalendarWidget):
@@ -9,7 +11,7 @@ class CalendarWidget(QCalendarWidget):
     loading_started = pyqtSignal()
     loading_finished = pyqtSignal()
 
-    def __init__(self, file_system_reader) -> None:
+    def __init__(self, file_system_reader: FileSystemReader) -> None:
         super().__init__()
         self._fs = file_system_reader
         self._available_qdates: set[QDate] = set()
@@ -57,7 +59,7 @@ class CalendarWidget(QCalendarWidget):
         self._formatted_qdates = set(self._available_qdates | self._video_qdates)
         self.loading_finished.emit()
 
-    def paintCell(self, painter: QPainter, rect, date: QDate) -> None:
+    def paintCell(self, painter: QPainter, rect: QRect, date: QDate) -> None:  # noqa: N802
         super().paintCell(painter, rect, date)
         if date in self._available_qdates:
             color = (
@@ -82,5 +84,5 @@ class CalendarWidget(QCalendarWidget):
         if d in self._available_qdates:
             self.date_selected.emit(d)
 
-    def _on_page_changed(self, year: int, month: int) -> None:
+    def _on_page_changed(self, _year: int, _month: int) -> None:
         self.update()
