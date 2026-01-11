@@ -16,6 +16,7 @@ class DateDirectoryManager:
             base_path: The root directory where date-based subdirectories will be created.
         """
         self._base_path = Path(base_path).expanduser().resolve()
+        self.last_error_msg: str | None = None
         logger.debug(
             f"Initialized DateDirectoryManager with base path: {self._base_path}"
         )
@@ -99,5 +100,7 @@ class DateDirectoryManager:
                 )
             return is_safe
         except (ValueError, RuntimeError) as e:
-            logger.warning(f"Path validation failed for {path}: {e}")
+            error_msg = f"Path validation failed for {path}: {e}"
+            logger.warning(error_msg)
+            self.last_error_msg = error_msg
             return False

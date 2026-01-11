@@ -77,14 +77,14 @@ class TestSystemStateMonitor:
         mock_quartz.CGSessionCopyCurrentDictionary.return_value = {
             "CGSSessionScreenIsLocked": 1
         }
-        pause_func = MagicMock()
+        pause_callback = MagicMock()
         monitor = SystemStateMonitor()
-        monitor.set_callbacks(pause_func=pause_func)
+        monitor.set_callbacks(pause_callback=pause_callback)
 
         result = monitor.check_and_notify()
 
         assert result is True
-        pause_func.assert_called_once()
+        pause_callback.assert_called_once()
         assert monitor._was_locked is True
 
     @patch("activity_beacon.system_state.system_state_monitor.Quartz")
@@ -162,7 +162,7 @@ class TestSystemStateMonitor:
     def test_check_and_notify_only_pause_callback(self) -> None:
         monitor = SystemStateMonitor()
         pause_func = MagicMock()
-        monitor.set_callbacks(pause_func=pause_func)
+        monitor.set_callbacks(pause_callback=pause_func)
 
         with patch.object(monitor, "is_screen_locked", return_value=True):
             monitor.check_and_notify()

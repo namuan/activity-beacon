@@ -4,10 +4,13 @@ from typing import TYPE_CHECKING, cast
 
 import Quartz  # type: ignore[import-untyped]
 
+from activity_beacon.logging import get_logger
 from activity_beacon.window_tracking.data import WindowInfo
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+
+logger = get_logger("activity_beacon.window_tracking")
 
 
 class WindowEnumerator:
@@ -29,6 +32,7 @@ class WindowEnumerator:
     def __init__(self) -> None:
         """Initialize the WindowEnumerator."""
         super().__init__()
+        self.last_error_msg: str | None = None
 
     def enumerate_windows(
         self, focused_pid: int | None = None
@@ -42,34 +46,41 @@ class WindowEnumerator:
         Returns:
             tuple[WindowInfo, ...]: A tuple of WindowInfo objects for each visible window.
         """
-        # Options for window list: on-screen only, exclude desktop elements
-        # PyObjC constants are often not recognized by static analyzers
-        k_on_screen = cast("int", Quartz.kCGWindowListOptionOnScreenOnly)  # type: ignore[attr-defined]
-        k_exclude_desktop = cast("int", Quartz.kCGWindowListExcludeDesktopElements)  # type: ignore[attr-defined]
-        k_null_id = cast("int", Quartz.kCGNullWindowID)  # type: ignore[attr-defined]
+        try:
+            # Options for window list: on-screen only, exclude desktop elements
+            # PyObjC constants are often not recognized by static analyzers
+            k_on_screen = cast("int", Quartz.kCGWindowListOptionOnScreenOnly)  # type: ignore[attr-defined]
+            k_exclude_desktop = cast("int", Quartz.kCGWindowListExcludeDesktopElements)  # type: ignore[attr-defined]
+            k_null_id = cast("int", Quartz.kCGNullWindowID)  # type: ignore[attr-defined]
 
-        list_options = k_on_screen | k_exclude_desktop
+            list_options = k_on_screen | k_exclude_desktop
 
-        # Get the window list information
-        # Using cast to Mapping for basedpyright
-        window_list = cast(
-            "list[Mapping[str, object]]",
-            Quartz.CGWindowListCopyWindowInfo(list_options, k_null_id),
-        )  # type: ignore[no-untyped-call]
+            # Get the window list information
+            # Using cast to Mapping for basedpyright
+            window_list = cast(
+                "list[Mapping[str, object]]",
+                Quartz.CGWindowListCopyWindowInfo(list_options, k_null_id),
+            )  # type: ignore[no-untyped-call]
 
-        if not window_list:
+            if not window_list:
+                return ()
+
+            windows: list[WindowInfo] = []
+            for window_data in window_list:
+                # Skip windows with layer > 0 (usually system overlays, menus, etc.)
+                layer = cast("int", window_data.get(self.K_LAYER, 0))
+                if layer != 0:
+                    continue
+
+                windows.append(self._parse_window_data(window_data, focused_pid))
+
+            return tuple(windows)
+
+        except RuntimeError as e:
+            error_msg = f"Failed to enumerate windows: {e}"
+            logger.error(error_msg)
+            self.last_error_msg = error_msg
             return ()
-
-        windows: list[WindowInfo] = []
-        for window_data in window_list:
-            # Skip windows with layer > 0 (usually system overlays, menus, etc.)
-            layer = cast("int", window_data.get(self.K_LAYER, 0))
-            if layer != 0:
-                continue
-
-            windows.append(self._parse_window_data(window_data, focused_pid))
-
-        return tuple(windows)
 
     def _parse_window_data(
         self,

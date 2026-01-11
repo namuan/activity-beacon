@@ -38,19 +38,19 @@ class SystemStateMonitor:
 
     def set_callbacks(
         self,
-        pause_func: Callable[[], None] | None = None,
+        pause_callback: Callable[[], None] | None = None,
         resume_callback: Callable[[], None] | None = None,
     ) -> None:
         """Set callbacks for pause/resume notifications.
 
         Args:
-            pause_func: Function to call when screen is locked.
+            pause_callback: Function to call when screen is locked.
             resume_callback: Function to call when screen is unlocked.
         """
-        self._pause_callback = pause_func
+        self._pause_callback = pause_callback
         self._resume_callback = resume_callback
         logger.debug(
-            f"Set callbacks: pause={pause_func is not None}, resume={resume_callback is not None}"
+            f"Set callbacks: pause={pause_callback is not None}, resume={resume_callback is not None}"
         )
 
     def is_screen_locked(self) -> bool:
@@ -63,7 +63,7 @@ class SystemStateMonitor:
             session_info = cast(
                 "Mapping[str, object] | None",
                 Quartz.CGSessionCopyCurrentDictionary(),  # type: ignore[attr-defined]
-            )  # type: ignore[no-untyped-call]
+            )
         except RuntimeError as exc:  # pragma: no cover - system API exceptions
             self.last_error_msg = str(exc)
             logger.error("Error reading session dictionary: %s", exc)

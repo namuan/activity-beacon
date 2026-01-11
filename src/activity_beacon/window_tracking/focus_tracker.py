@@ -5,7 +5,10 @@ from typing import cast
 
 from AppKit import NSWorkspace  # type: ignore[import-untyped]
 
+from activity_beacon.logging import get_logger
 from activity_beacon.window_tracking.data import FocusedAppData
+
+logger = get_logger("activity_beacon.window_tracking")
 
 
 class FocusTracker:
@@ -20,6 +23,7 @@ class FocusTracker:
         """Initialize the FocusTracker with NSWorkspace."""
         super().__init__()
         self.workspace = NSWorkspace.sharedWorkspace()  # type: ignore[no-untyped-call]
+        self.last_error_msg: str | None = None
 
     def get_focused_application(self) -> FocusedAppData:
         """Get information about the currently focused application.
@@ -33,31 +37,43 @@ class FocusTracker:
             - Window name may be None if not available or accessible
             - Timestamp is always in UTC timezone
         """
-        active_app = self.workspace.frontmostApplication()  # type: ignore[no-untyped-call]
+        try:
+            active_app = self.workspace.frontmostApplication()  # type: ignore[no-untyped-call]
 
-        if not active_app:
-            # Return placeholder if no active application
+            if not active_app:
+                # Return placeholder if no active application
+                return FocusedAppData(
+                    app_name="Unknown",
+                    pid=0,
+                    window_name=None,
+                    timestamp=datetime.now(UTC),
+                )
+
+            app_name = cast("str", active_app.localizedName() or "Unknown")  # type: ignore[no-untyped-call]
+            pid = cast("int", active_app.processIdentifier())  # type: ignore[no-untyped-call]
+
+            # Try to get window name from the active application
+            # Note: NSWorkspace doesn't directly provide window names,
+            # so this may return None for many applications
+            window_name = self._get_window_name()
+
+            return FocusedAppData(
+                app_name=app_name,
+                pid=pid,
+                window_name=window_name,
+                timestamp=datetime.now(UTC),
+            )
+
+        except RuntimeError as e:
+            error_msg = f"Failed to get focused application: {e}"
+            logger.error(error_msg)
+            self.last_error_msg = error_msg
             return FocusedAppData(
                 app_name="Unknown",
                 pid=0,
                 window_name=None,
                 timestamp=datetime.now(UTC),
             )
-
-        app_name = cast("str", active_app.localizedName() or "Unknown")  # type: ignore[no-untyped-call]
-        pid = cast("int", active_app.processIdentifier())  # type: ignore[no-untyped-call]
-
-        # Try to get window name from the active application
-        # Note: NSWorkspace doesn't directly provide window names,
-        # so this may return None for many applications
-        window_name = self._get_window_name()
-
-        return FocusedAppData(
-            app_name=app_name,
-            pid=pid,
-            window_name=window_name,
-            timestamp=datetime.now(UTC),
-        )
 
     @staticmethod
     def _get_window_name() -> str | None:

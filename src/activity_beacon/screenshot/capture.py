@@ -34,6 +34,7 @@ class ScreenshotCapture:
     def __init__(self) -> None:  # type: ignore[no-untyped-def]
         self._mss: MSSBase | None = None
         self._monitors: list[MonitorInfo] = []
+        self.last_error_msg: str | None = None
 
     def _ensure_mss(self) -> MSSBase:
         if self._mss is None:
@@ -122,23 +123,39 @@ class ScreenshotCapture:
         output_path: Path,
         format: Literal["PNG", "JPEG", "BMP"] = "PNG",
     ) -> Path:
-        image = self.capture_monitor(monitor_id)
-        output_path = Path(output_path)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            image = self.capture_monitor(monitor_id)
+            output_path = Path(output_path)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        image_format = format.upper()
-        if image_format == "JPEG":
-            image = image.convert("RGB")
+            image_format = format.upper()
+            if image_format == "JPEG":
+                image = image.convert("RGB")
 
-        image.save(output_path, format=image_format)
-        logger.info(f"Saved screenshot to {output_path}")
-        return output_path
+            image.save(output_path, format=image_format)
+            logger.info(f"Saved screenshot to {output_path}")
+            return output_path
+        except PermissionError as e:
+            error_msg = f"Permission denied writing to {output_path}: {e}"
+            logger.error(error_msg)
+            self.last_error_msg = error_msg
+            raise OSError(error_msg) from e
+        except OSError as e:
+            error_msg = f"Failed to write screenshot to {output_path}: {e}"
+            logger.error(error_msg)
+            self.last_error_msg = error_msg
+            raise OSError(error_msg) from e
 
     def close(self) -> None:
         if self._mss is not None:
-            self._mss.close()
-            self._mss = None
-            logger.debug("Closed MSS connection")
+            try:
+                self._mss.close()
+                self._mss = None
+                logger.debug("Closed MSS connection")
+            except OSError as e:
+                error_msg = f"Error closing MSS connection: {e}"
+                logger.error(error_msg)
+                self.last_error_msg = error_msg
 
     def __enter__(self) -> "ScreenshotCapture":
         return self
