@@ -1,0 +1,290 @@
+{
+  "project": "ActivityBeacon",
+  "branchName": "ralph/screenshot-capture-system",
+  "description": "ActivityBeacon Screenshot Capture System - Core screenshot daemon with multi-monitor support, change detection, window tracking, and organized file storage",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Set up project structure and core data classes",
+      "description": "As a developer, I need to establish the foundational project structure with core data classes for window tracking and screenshot pipeline.",
+      "acceptanceCriteria": [
+        "Create core module structure under src/ with screenshot, window_tracking, and file_storage packages",
+        "Define WindowDataEntry, FocusedAppData, and WindowInfo data classes with proper type hints",
+        "Set up logging configuration for daily rotating files",
+        "Configure pytest testing framework with fixtures",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Implement ScreenshotCapture class with monitor enumeration",
+      "description": "As a developer, I need to capture screenshots from individual monitors using mss library.",
+      "acceptanceCriteria": [
+        "Create ScreenshotCapture class that enumerates available monitors",
+        "Implement individual monitor capture with proper geometry handling",
+        "Detect monitor count and resolution from system",
+        "Typecheck passes",
+        "Tests pass for monitor detection and capture"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Implement ImageProcessor for multi-monitor stitching",
+      "description": "As a developer, I need to stitch screenshots from multiple monitors into a single composite image.",
+      "acceptanceCriteria": [
+        "Create ImageProcessor class with scaling logic to match highest resolution",
+        "Implement horizontal stitching of multiple monitor images",
+        "Preserve aspect ratio during scaling operations",
+        "Typecheck passes",
+        "Tests pass for stitching with known multi-monitor configurations"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Implement ChangeDetector for pixel-level analysis",
+      "description": "As a developer, I need to detect changes between consecutive screenshots using numpy-based pixel analysis.",
+      "acceptanceCriteria": [
+        "Create ChangeDetector class with configurable threshold (default: 10)",
+        "Implement pixel difference calculation using numpy arrays",
+        "Support comparison of composite images",
+        "Typecheck passes",
+        "Tests pass for threshold behavior and edge cases"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Implement FocusTracker for active application detection",
+      "description": "As a developer, I need to track the active application and its focused window.",
+      "acceptanceCriteria": [
+        "Create FocusTracker class using AppKit.NSWorkspace",
+        "Implement active application detection with PID tracking",
+        "Extract focused window name from active application",
+        "Handle missing or invalid window states gracefully",
+        "Typecheck passes",
+        "Tests pass for focus detection"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Implement WindowEnumerator for complete window metadata",
+      "description": "As a developer, I need to enumerate all visible windows with complete metadata.",
+      "acceptanceCriteria": [
+        "Create WindowEnumerator using Quartz.CGWindowListCopyWindowInfo",
+        "Extract application names, window names, PIDs, and focus status",
+        "Return complete window information for each visible window",
+        "Handle system windows and background processes appropriately",
+        "Typecheck passes",
+        "Tests pass for window collection completeness"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Implement DateDirectoryManager for organized file storage",
+      "description": "As a developer, I need to organize screenshots and data into date-based directory structures.",
+      "acceptanceCriteria": [
+        "Create DateDirectoryManager with date-based directory creation (YYYY/MM/DD)",
+        "Generate proper screenshot filenames (YYYYMMDD_HHMMSS.png)",
+        "Create directories with appropriate permissions if they don't exist",
+        "Handle path validation and security concerns",
+        "Typecheck passes",
+        "Tests pass for directory creation and naming"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Implement JSONLWriter for window data storage",
+      "description": "As a developer, I need to store window data in newline-delimited JSON format.",
+      "acceptanceCriteria": [
+        "Create JSONLWriter that writes newline-delimited JSON (not JSON array)",
+        "Add ISO 8601 timestamp formatting for all entries",
+        "Append to existing files without overwriting",
+        "Handle file I/O errors gracefully",
+        "Typecheck passes",
+        "Tests pass for JSONL format compliance"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Implement SystemStateMonitor for screen lock detection",
+      "description": "As a developer, I need to detect when the screen is locked and pause screenshot capture.",
+      "acceptanceCriteria": [
+        "Create SystemStateMonitor using Quartz.CGSessionCopyCurrentDictionary",
+        "Implement screen lock detection with boolean status",
+        "Provide pause/resume notification interface",
+        "Handle macOS session changes gracefully",
+        "Typecheck passes",
+        "Tests pass for screen lock behavior"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Implement MenuBarController with system tray interface",
+      "description": "As a user, I need a system tray icon to control the capture daemon.",
+      "acceptanceCriteria": [
+        "Create MenuBarController using PyQt6",
+        "Implement system tray icon with start/stop controls",
+        "Add configuration interface for capture interval adjustment",
+        "Display current capture status and statistics",
+        "Typecheck passes"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Add comprehensive error handling with descriptive messages",
+      "description": "As a developer, I need robust error handling that provides meaningful feedback.",
+      "acceptanceCriteria": [
+        "Wrap OSError and PermissionError with descriptive user-friendly messages",
+        "Store last error message in last_error_msg attributes on components",
+        "Log all errors with context information",
+        "Gracefully handle recovery from transient failures",
+        "Typecheck passes",
+        "Tests pass for error message wrapping"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Implement logging system with proper formatting",
+      "description": "As a developer, I need comprehensive logging to ~/.logs/activity-beacon/.",
+      "acceptanceCriteria": [
+        "Set up daily rotating log files in ~/.logs/activity-beacon/",
+        "Use log format: YYYY-MM-DD HH:MM:SS - LEVEL - message",
+        "Create separate loggers for different components",
+        "Handle log directory creation and permissions",
+        "Typecheck passes",
+        "Tests pass for log format compliance and rotation"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "Implement WindowDataParser for JSONL file processing",
+      "description": "As a developer, I need to parse and validate stored window data from JSONL files.",
+      "acceptanceCriteria": [
+        "Create WindowDataParser that reads line-by-line JSON (not array parsing)",
+        "Implement malformed data error reporting with line numbers",
+        "Validate required fields in each window data entry",
+        "Return parsed data in structured format",
+        "Typecheck passes",
+        "Tests pass for valid and invalid JSONL data"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Implement FileSystemReader for directory validation",
+      "description": "As a developer, I need to validate captured data directory structure.",
+      "acceptanceCriteria": [
+        "Create FileSystemReader that validates date directory structure",
+        "Check for presence of required screenshot and data files",
+        "Validate file naming conventions",
+        "Return comprehensive validation report",
+        "Typecheck passes",
+        "Tests pass for directory structure validation"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "Add timestamp validation for ISO 8601 compliance",
+      "description": "As a developer, I need to ensure all timestamps follow ISO 8601 format.",
+      "acceptanceCriteria": [
+        "Validate ISO 8601 datetime format in window data",
+        "Reject malformed timestamps with descriptive errors",
+        "Support timezone-aware timestamp validation",
+        "Provide conversion utilities between timestamp formats",
+        "Typecheck passes",
+        "Tests pass for ISO format validation"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "Create CaptureController to coordinate all components",
+      "description": "As a developer, I need to wire together all components into a working capture pipeline.",
+      "acceptanceCriteria": [
+        "Create CaptureController that orchestrates screenshot, processing, window tracking, and storage",
+        "Implement timer-based capture cycle with configurable intervals (default: 30 seconds)",
+        "Integrate SystemStateMonitor for pause/resume on screen lock",
+        "Handle component initialization and cleanup",
+        "Typecheck passes",
+        "Tests pass for component coordination"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-017",
+      "title": "Create application entry point and CLI configuration",
+      "description": "As a user, I need a command-line interface to start and configure the capture daemon.",
+      "acceptanceCriteria": [
+        "Create main entry point script with command-line argument parsing",
+        "Support configuration file loading from ~/.config/activity-beacon/config.toml",
+        "Implement --interval, --output, --debug command-line options",
+        "Initialize logging and error handling on startup",
+        "Handle graceful shutdown with SIGTERM/SIGINT",
+        "Typecheck passes"
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-018",
+      "title": "Write comprehensive integration tests for capture cycle",
+      "description": "As a developer, I need integration tests that verify end-to-end functionality.",
+      "acceptanceCriteria": [
+        "Create integration tests for complete capture cycle",
+        "Test screenshot capture, processing, change detection, and storage",
+        "Verify window data collection and JSONL writing",
+        "Test error recovery and system state handling",
+        "Tests pass and cover all major code paths",
+        "Typecheck passes"
+      ],
+      "priority": 18,
+      "passes": false,
+      "notes": ""
+    }
+  ]
+}
