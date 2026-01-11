@@ -3,5 +3,13 @@ from activity_beacon.window_tracking.data import (
     WindowDataEntry,
     WindowInfo,
 )
+from activity_beacon.window_tracking.focus_tracker import FocusTracker
+from activity_beacon.window_tracking.window_enumerator import WindowEnumerator
 
-__all__ = ["FocusedAppData", "WindowDataEntry", "WindowInfo"]
+__all__ = [
+    "FocusTracker",
+    "FocusedAppData",
+    "WindowDataEntry",
+    "WindowEnumerator",
+    "WindowInfo",
+]

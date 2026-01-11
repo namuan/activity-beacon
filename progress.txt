@@ -303,3 +303,38 @@ Implemented FocusTracker class for active application detection using AppKit.NSW
 - Use datetime.UTC instead of datetime.timezone.utc (ruff UP017 auto-fix)
 
 ---
+
+## 2026-01-11 - US-006
+Thread: Local Development
+
+### Summary
+Implemented WindowEnumerator class for complete window metadata collection using Quartz.CGWindowListCopyWindowInfo.
+
+### Files Changed
+- src/activity_beacon/window_tracking/window_enumerator.py (new)
+- src/activity_beacon/window_tracking/__init__.py (modified - exports)
+- tests/test_window_enumerator.py (new)
+- prd.json (updated US-006 passes: true)
+
+### Changes
+- Created WindowEnumerator class with:
+  - `enumerate_windows()` - collects information about all visible windows
+  - Filters for layer 0 (normal windows) and excludes desktop elements
+  - Extracts application names, window names, PIDs, and geometry (screen rect)
+  - Identifies focused windows based on PID
+- Optimized by caching Quartz constant keys as class attributes
+- Handled basedpyright strict mode by using `cast`, `Mapping`, and `# type: ignore[attr-defined]`
+- Added 4 comprehensive tests with Quartz mocking
+
+### Quality Results
+- basedpyright: 0 errors for window_enumerator.py (Total project errors reduced)
+- ruff: All checks passed
+- pytest: 67 tests passed (including 4 new tests)
+- window_enumerator.py coverage: 100%
+
+### Learnings for Future Iterations
+- PyObjC constants (Quartz.kCG...) often require `# type: ignore[attr-defined]` in basedpyright strict mode even if the module is ignored during import
+- Use `Mapping[str, object]` instead of `dict` or `Any` for window data dictionaries to satisfy basedpyright
+- Caching Quartz keys as class constants helps reduce local variable count and repetitive casting
+- `Quartz.kCGWindowListOptionOnScreenOnly | Quartz.kCGWindowListExcludeDesktopElements` is the standard combination for getting visible user windows
+- Layer 0 is where normal application windows reside on macOS
