@@ -103,39 +103,94 @@ Changes in window_data_timeline.py:
 
 ---
 
-## 2026-01-11 - US-001
+## 2026-01-11 - US-002
+Thread: https://ampcode.com/threads/local-development
+
+### Summary
+Implemented ScreenshotCapture class with monitor enumeration and individual monitor capture using mss library.
+
+### Files Changed
+- src/activity_beacon/screenshot/capture.py (new)
+- src/activity_beacon/screenshot/__init__.py (modified - exports)
+- tests/test_screenshot_capture.py (new)
+
+### Changes
+- Created MonitorInfo dataclass with geometry and resolution properties
+- Implemented ScreenshotCapture class with:
+  - enumerate_monitors() - detects all monitors with primary identification
+  - get_monitor_count() - returns number of physical monitors
+  - get_monitor_info() - returns MonitorInfo for specific monitor
+  - capture_monitor() - captures screenshot from specific monitor
+  - capture_all_monitors() - captures screenshots from all monitors
+  - capture_to_path() - saves screenshot to file with format support
+  - Context manager support (enter/exit)
+- Added comprehensive tests with mocking for mss library (14 tests passing)
+
+### Quality Results
+- basedpyright: 0 errors
+- ruff: All checks passed
+- pytest: 14 tests passed (100%)
+- screenshot/capture.py coverage: 95.50%
+
+### Learnings for Future Iterations
+- mss.monitors[0] is a virtual monitor representing all combined monitors - skip it
+- mss library doesn't have complete type stubs; use MSSBase from mss.base for typing
+- Primary monitor detection: monitor with x=0, y=0 is primary
+- Mock mss.mss with patch('mss.mss') and set .monitors attribute on the return value
+- For nested with statements in tests, use ExitStack from contextlib for cleaner code
+- Image.frombytes needs raw mode "BGRX" for mss screenshots on macOS
+
+**Learnings for future iterations:**
+  - mss.monitors[0] is virtual combined monitor - skip in enumerate loop
+  - Use MSSBase type from mss.base for mss instance typing when needed
+  - patch('mss.mss') works best for mocking mss in tests
+  - ExitStack is useful for combining multiple context managers in tests
+  - mss screenshots use BGRA byte order, convert with "BGRX" raw mode
+
+---
+
+## 2026-01-11 - US-003
 Thread: Local Development
 
 ### Summary
-Implemented foundational project structure for the ActivityBeacon Screenshot Capture System.
+Implemented ImageProcessor class for multi-monitor screenshot stitching with scaling, aspect ratio preservation, and horizontal stitching.
 
 ### Files Changed
-- src/activity_beacon/logging.py (new)
-- src/activity_beacon/window_tracking/data.py (new)
-- src/activity_beacon/window_tracking/__init__.py (new)
-- src/activity_beacon/screenshot/__init__.py (new)
-- src/activity_beacon/file_storage/__init__.py (new)
-- tests/conftest.py (new)
-- tests/test_data_classes.py (new)
-- pyproject.toml (modified - fixed coverage paths)
+- src/activity_beacon/screenshot/image_processor.py (new)
+- src/activity_beacon/screenshot/__init__.py (modified - exports)
+- tests/test_image_processor.py (new)
 
 ### Changes
-- Created core module structure with screenshot, window_tracking, and file_storage packages
-- Defined frozen dataclasses: WindowInfo, FocusedAppData, WindowDataEntry with proper type hints
-- Implemented logging module with daily rotating log files in ~/.logs/activity-beacon/
-- Added pytest fixtures for testing window data classes
-- Created comprehensive tests for all data classes (7 tests passing)
+- Created ImageProcessor class with:
+  - `stitch_horizontally()` - stitches multiple monitor images into composite
+  - `stitch_with_metadata()` - returns composite with metadata
+  - `_scale_image()` - scales images using LANCZOS resampling
+  - `_find_target_resolution()` - finds highest resolution monitor
+  - `_calculate_scale_factor()` - maintains aspect ratio during scaling
+  - `last_error_msg` - error tracking attribute
+- Images are scaled to match the highest resolution monitor's dimensions
+- Aspect ratio is preserved during scaling using min(width_ratio, height_ratio)
+- Horizontal stitching places monitors side-by-side in sorted order
+- Added 14 tests covering edge cases and multi-monitor configurations
 
 ### Quality Results
-- basedpyright: 0 errors on new files
-- ruff: All checks passed on new files
-- pytest: 7 tests passed (100%)
-- window_tracking/data.py coverage: 93.55%
+- basedpyright: 0 errors
+- ruff: All checks passed
+- pytest: 14 tests passed (100%)
+- image_processor.py coverage: 90.24%
 
 ### Learnings for Future Iterations
-- Frozen dataclasses with datetime fields need __post_init__ to handle tzinfo normalization
-- Pytest fixtures in conftest.py need the package to be installed in editable mode to import correctly
-- Coverage paths in pyproject.toml must match the actual package name for pytest-cov to work
-- New modules need __init__.py files even if empty to be recognized as packages
+- basedpyright doesn't allow `Any` type - use `object` or `Mapping[str, object]` instead
+- Image.new() and Image.paste() require real PIL Images, not MagicMock objects
+- Tests using real PIL Images are more reliable than mocking Image operations
+- Use `# type: ignore[reportMissingSuperCall]` for simple classes without parent
+- Ruff F841 for unused variables - use `_` prefix for intentionally unused values
+- `@staticmethod` decorator for helper methods that don't use `self`
+- Use `Mapping` instead of `dict` for function parameters to allow more flexibility
 
----
+**Learnings for future iterations:**
+  - Use `object` instead of `Any` for type annotations to satisfy basedpyright
+  - Use real PIL Images in tests instead of MagicMock for Image operations
+  - `@staticmethod` for methods that don't use `self`
+  - Use `Mapping` type for flexible dict-like parameters
+  - Add `# type: ignore[reportMissingSuperCall]` for classes without parent class
