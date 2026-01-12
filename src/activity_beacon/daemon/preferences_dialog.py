@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PyQt6.QtCore import QSettings
+from PyQt6.QtCore import QSettings, Qt
 from PyQt6.QtWidgets import (
     QCheckBox,
     QDialog,
@@ -12,9 +12,11 @@ from PyQt6.QtWidgets import (
     QFileDialog,
     QFormLayout,
     QGroupBox,
+    QHBoxLayout,
     QLabel,
     QLineEdit,
     QPushButton,
+    QSizePolicy,
     QSpinBox,
     QVBoxLayout,
 )
@@ -39,7 +41,8 @@ class PreferencesDialog(QDialog):
         super().__init__()
         self.setWindowTitle("ActivityBeacon Preferences")
         self.setModal(True)
-        self.setMinimumWidth(500)
+        self.setMinimumWidth(600)
+        self.setMinimumHeight(350)
 
         # Load current settings
         self._settings = QSettings("ActivityBeacon", "ActivityBeacon")
@@ -64,16 +67,47 @@ class PreferencesDialog(QDialog):
     def _setup_ui(self) -> None:
         """Set up the user interface."""
         layout = QVBoxLayout()
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(15)
 
-        # Capture settings group
+        # Add settings groups
+        layout.addWidget(self._create_capture_group())
+        layout.addWidget(self._create_general_group())
+        layout.addStretch()
+
+        # Dialog buttons
+        button_box = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
+        button_box.accepted.connect(self._save_and_accept)  # type: ignore[reportUnknownMemberType]
+        button_box.rejected.connect(self.reject)  # type: ignore[reportUnknownMemberType]
+        layout.addWidget(button_box)
+
+        self.setLayout(layout)
+
+    def _create_capture_group(self) -> QGroupBox:
+        """Create the capture settings group."""
         capture_group = QGroupBox("Capture Settings")
         capture_layout = QFormLayout()
+        capture_layout.setSpacing(12)
+        capture_layout.setContentsMargins(15, 15, 15, 15)
+        capture_layout.setLabelAlignment(
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+        )
+        capture_layout.setFieldGrowthPolicy(
+            QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow
+        )
 
         # Output directory
-        output_layout = QVBoxLayout()
+        output_layout = QHBoxLayout()
+        output_layout.setSpacing(8)
         self._output_edit = QLineEdit(str(self._output_dir))
         self._output_edit.setReadOnly(True)
+        self._output_edit.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
         browse_button = QPushButton("Browse...")
+        browse_button.setFixedWidth(100)
         browse_button.clicked.connect(self._browse_output_directory)  # type: ignore[reportUnknownMemberType]
         output_layout.addWidget(self._output_edit)
         output_layout.addWidget(browse_button)
@@ -85,14 +119,26 @@ class PreferencesDialog(QDialog):
         self._interval_spin.setMaximum(3600)
         self._interval_spin.setSuffix(" seconds")
         self._interval_spin.setValue(self._interval)
+        self._interval_spin.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
         capture_layout.addRow("Capture Interval:", self._interval_spin)
 
         capture_group.setLayout(capture_layout)
-        layout.addWidget(capture_group)
+        return capture_group
 
-        # General settings group
+    def _create_general_group(self) -> QGroupBox:
+        """Create the general settings group."""
         general_group = QGroupBox("General Settings")
         general_layout = QFormLayout()
+        general_layout.setSpacing(12)
+        general_layout.setContentsMargins(15, 15, 15, 15)
+        general_layout.setLabelAlignment(
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+        )
+        general_layout.setFieldGrowthPolicy(
+            QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow
+        )
 
         # Debug mode
         self._debug_checkbox = QCheckBox()
@@ -103,20 +149,13 @@ class PreferencesDialog(QDialog):
         settings_path = QLabel(self._settings.fileName())
         settings_path.setWordWrap(True)
         settings_path.setStyleSheet("color: gray; font-size: 10pt;")
+        settings_path.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred
+        )
         general_layout.addRow("Settings File:", settings_path)
 
         general_group.setLayout(general_layout)
-        layout.addWidget(general_group)
-
-        # Dialog buttons
-        button_box = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
-        )
-        button_box.accepted.connect(self._save_and_accept)  # type: ignore[reportUnknownMemberType]
-        button_box.rejected.connect(self.reject)  # type: ignore[reportUnknownMemberType]
-        layout.addWidget(button_box)
-
-        self.setLayout(layout)
+        return general_group
 
     def _browse_output_directory(self) -> None:
         """Open a directory browser to select output directory."""

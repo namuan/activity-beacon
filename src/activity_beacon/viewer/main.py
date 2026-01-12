@@ -19,6 +19,8 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from activity_beacon.__main__ import load_settings
+
 from .calendar_widget import CalendarWidget
 from .filesystem_reader import FileSystemReader
 from .video_player import VideoPlayerWidget
@@ -37,7 +39,14 @@ if TYPE_CHECKING:
 class MainWindow(QMainWindow):
     def __init__(self, base_dir: Path | None = None) -> None:
         super().__init__()
-        self._base_dir = base_dir or (Path.home() / "Documents" / "Screenshots")
+        if base_dir:
+            self._base_dir = base_dir
+        else:
+            logger = logging.getLogger()
+            try:
+                self._base_dir = load_settings(logger)[0]
+            except (ValueError, OSError):
+                self._base_dir = Path.home() / "Documents" / "Screenshots"
         self._fs = FileSystemReader(self._base_dir)
         self._parser = WindowDataParser()
 
@@ -200,11 +209,19 @@ class MainWindow(QMainWindow):
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Activity Beacon")
+
+    # Get the configured default directory
+    logger = logging.getLogger()
+    try:
+        default_dir = load_settings(logger)[0]
+    except (ValueError, OSError):
+        default_dir = Path.home() / "Documents" / "Screenshots"
+
     parser.add_argument(
         "--base-dir",
         "-b",
         help="Base screenshots directory",
-        default=str(Path.home() / "Documents" / "Screenshots"),
+        default=str(default_dir),
     )
     args = parser.parse_args()
 
