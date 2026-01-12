@@ -352,6 +352,9 @@ class CaptureController:
         """
         screenshot_path = self._date_directory_manager.get_screenshot_path(timestamp)
 
+        # Ensure the directory exists before saving
+        screenshot_path.parent.mkdir(parents=True, exist_ok=True)
+
         image.save(screenshot_path, format="PNG")
         logger.debug("Saved screenshot: %s", screenshot_path)
 

@@ -12,8 +12,6 @@ from activity_beacon.daemon.capture_controller import CaptureConfig, CaptureCont
 from activity_beacon.daemon.menu_bar_controller import MenuBarController
 from activity_beacon.logging import get_default_log_dir, get_logger, setup_logging
 
-logger = get_logger("activity_beacon")
-
 
 def get_config_path() -> Path:
     """Get the recommended configuration path on macOS.
@@ -35,10 +33,13 @@ def get_default_output_dir() -> Path:
     return Path.home() / "Documents" / "ActivityBeacon" / "data"
 
 
-def load_settings() -> tuple[Path, int, bool]:
+def load_settings(logger: logging_module.Logger) -> tuple[Path, int, bool]:
     """Load application settings from OS-native storage.
 
     On macOS, this uses QSettings which stores in ~/Library/Preferences.
+
+    Args:
+        logger: Logger instance for logging settings load.
 
     Returns:
         Tuple of (output_directory, capture_interval, debug_mode).
@@ -59,10 +60,13 @@ def load_settings() -> tuple[Path, int, bool]:
     return output_dir, interval, debug
 
 
-def save_settings(output_dir: Path, interval: int, *, debug_mode: bool) -> None:
+def save_settings(
+    logger: logging_module.Logger, output_dir: Path, interval: int, *, debug_mode: bool
+) -> None:
     """Save application settings to OS-native storage.
 
     Args:
+        logger: Logger instance for logging settings save.
         output_dir: Output directory for captured data.
         interval: Capture interval in seconds.
         debug_mode: Whether debug mode is enabled.
@@ -76,20 +80,28 @@ def save_settings(output_dir: Path, interval: int, *, debug_mode: bool) -> None:
     logger.info("Settings saved to: %s", settings.fileName())
 
 
-def configure_logging(*, debug_mode: bool) -> None:
+def configure_logging(*, debug_mode: bool) -> logging_module.Logger:
     """Configure logging based on debug mode.
 
     Args:
         debug_mode: Whether debug mode is enabled.
+
+    Returns:
+        Configured logger instance.
     """
     log_dir = get_default_log_dir()
     setup_logging(log_dir)
+
+    # Initialize the module-level logger after setup_logging
+    logger = get_logger("activity_beacon", log_dir)
 
     if debug_mode:
         logging_module.getLogger().setLevel(logging_module.DEBUG)
         for handler in logging_module.getLogger().handlers:
             if isinstance(handler, logging_module.StreamHandler):
                 handler.setLevel(logging_module.DEBUG)
+
+    return logger
 
 
 def create_capture_controller(output_dir: Path, interval: int) -> CaptureController:
@@ -117,11 +129,16 @@ def main() -> NoReturn:
     app.setOrganizationName("ActivityBeacon")
     app.setQuitOnLastWindowClosed(False)  # Keep running when windows close
 
-    # Load settings
-    output_dir, interval, debug = load_settings()
+    # Configure logging early (with default settings) so we can log during settings load
+    # We'll reconfigure if needed after loading debug setting
+    logger = configure_logging(debug_mode=False)
 
-    # Configure logging
-    configure_logging(debug_mode=debug)
+    # Load settings
+    output_dir, interval, debug = load_settings(logger)
+
+    # Reconfigure logging if debug mode was enabled
+    if debug:
+        logger = configure_logging(debug_mode=True)
 
     # Ensure output directory exists
     output_dir = output_dir.expanduser()
