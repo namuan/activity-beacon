@@ -4,10 +4,10 @@ from PyInstaller.utils.hooks import collect_data_files
 
 block_cipher = None
 
-a = Analysis(['main.py'],
+a = Analysis(['src/activity_beacon/__main__.py'],
              pathex=['.'],
              binaries=None,
-             datas=[('exercises', 'exercises')],
+             datas=[],
              hiddenimports=[],
              hookspath=None,
              runtime_hooks=None,
@@ -19,12 +19,13 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(pyz,
           a.scripts,
           exclude_binaries=True,
-          name='app',
+          name='activity-beacon',
           debug=False,
           strip=False,
           upx=True,
           console=False,
-          icon='assets\\icon.ico')
+          icon='assets/icon.icns',
+          entitlements='activity-beacon.entitlements')
 
 coll = COLLECT(exe,
                a.binaries,
@@ -32,18 +33,24 @@ coll = COLLECT(exe,
                a.datas,
                strip=False,
                upx=True,
-               name='ActiveBreaks')
+               name='ActivityBeacon')
 
 app = BUNDLE(coll,
-             name='ActiveBreaks.app',
+             name='ActivityBeacon.app',
              icon='assets/icon.icns',
-             bundle_identifier='com.github.namuan.activebreaks',
+             bundle_identifier='com.activitybeacon.app',
              info_plist={
-                'CFBundleName': 'ActiveBreaks',
-                'CFBundleVersion': '1.0.0',
-                'CFBundleShortVersionString': '1.0.0',
+                'CFBundleName': 'ActivityBeacon',
+                'CFBundleDisplayName': 'ActivityBeacon',
+                'CFBundleVersion': '0.1.0',
+                'CFBundleShortVersionString': '0.1.0',
+                'CFBundlePackageType': 'APPL',
+                'CFBundleExecutable': 'activity-beacon',
                 'NSPrincipalClass': 'NSApplication',
                 'NSHighResolutionCapable': True,
                 'LSUIElement': True,
+                'LSMinimumSystemVersion': '13.0',
+                'NSHumanReadableCopyright': 'Copyright © 2025. All rights reserved.',
+                'NSAppleEventsUsageDescription': 'ActivityBeacon needs to capture screenshots to track activity.',
                 }
              )
