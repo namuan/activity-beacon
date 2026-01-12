@@ -1,166 +1,88 @@
-import argparse
+"""ActivityBeacon - macOS menu bar application for screenshot automation."""
+
 import logging as logging_module
 from pathlib import Path
-import signal
 import sys
-import time
-import tomllib
-from typing import NoReturn, TypedDict, cast
+from typing import NoReturn
+
+from PyQt6.QtCore import QSettings
+from PyQt6.QtWidgets import QApplication
 
 from activity_beacon.daemon.capture_controller import CaptureConfig, CaptureController
+from activity_beacon.daemon.menu_bar_controller import MenuBarController
 from activity_beacon.logging import get_default_log_dir, get_logger, setup_logging
 
 logger = get_logger("activity_beacon")
 
 
-class CaptureSectionConfig(TypedDict):
-    interval: int
-    output: str
+def get_config_path() -> Path:
+    """Get the recommended configuration path on macOS.
 
-
-class GeneralSectionConfig(TypedDict):
-    debug: bool
-
-
-class FileConfig(TypedDict):
-    capture: CaptureSectionConfig
-    general: GeneralSectionConfig
-
-
-class CliArgs(TypedDict):
-    interval: int
-    output: Path
-    debug: bool
-    config: Path
-
-
-def parse_args() -> CliArgs:
-    """Parse command-line arguments.
+    Uses ~/Library/Application Support/ActivityBeacon/ per macOS guidelines.
 
     Returns:
-        Parsed arguments namespace.
+        Path to the application's configuration directory.
     """
-    parser = argparse.ArgumentParser(
-        prog="activity-beacon",
-        description="ActivityBeacon - A macOS-native screenshot automation tool",
-    )
-
-    parser.add_argument(
-        "--interval",
-        type=int,
-        default=30,
-        help="Capture interval in seconds (default: 30)",
-    )
-
-    parser.add_argument(
-        "--output",
-        type=Path,
-        default=Path.home() / "Documents" / "ActivityBeacon" / "data",
-        help="Output directory for screenshots and data (default: ~/Documents/ActivityBeacon/data)",
-    )
-
-    parser.add_argument(
-        "--debug",
-        action="store_true",
-        help="Enable debug mode (verbose console output)",
-    )
-
-    parser.add_argument(
-        "--config",
-        type=Path,
-        default=Path.home() / ".config" / "activity-beacon" / "config.toml",
-        help="Path to configuration file (default: ~/.config/activity-beacon/config.toml)",
-    )
-
-    parsed = parser.parse_args()
-
-    return cast(
-        "CliArgs",
-        {
-            "interval": parsed.interval,
-            "output": parsed.output,
-            "debug": parsed.debug,
-            "config": parsed.config,
-        },
-    )
+    return Path.home() / "Library" / "Application Support" / "ActivityBeacon"
 
 
-def load_config(config_path: Path) -> FileConfig:
-    """Load configuration from TOML file.
-
-    Args:
-        config_path: Path to the configuration file.
+def get_default_output_dir() -> Path:
+    """Get the default output directory for captures.
 
     Returns:
-        Dictionary containing configuration values.
+        Path to the default output directory.
     """
-    config: FileConfig = {
-        "capture": {"interval": 30, "output": ""},
-        "general": {"debug": False},
-    }
-
-    if not config_path.exists():
-        logger.debug("Config file not found: %s", config_path)
-        return config
-
-    try:
-        with Path(config_path).open("rb") as f:
-            raw_config = tomllib.load(f)
-        logger.info("Loaded configuration from: %s", config_path)
-
-        if "capture" in raw_config and isinstance(raw_config["capture"], dict):
-            config["capture"] = raw_config["capture"]  # type: ignore[literal-required]
-        if "general" in raw_config and isinstance(raw_config["general"], dict):
-            config["general"] = raw_config["general"]  # type: ignore[literal-required]
-    except OSError as e:
-        logger.warning("Failed to load config file: %s", e)
-
-    return config
+    return Path.home() / "Documents" / "ActivityBeacon" / "data"
 
 
-def merge_config(cli_args: CliArgs, file_config: FileConfig) -> tuple[Path, int, bool]:
-    """Merge CLI arguments with file configuration.
+def load_settings() -> tuple[Path, int, bool]:
+    """Load application settings from OS-native storage.
 
-    CLI arguments take precedence over file configuration.
-
-    Args:
-        cli_args: Parsed CLI arguments.
-        file_config: Configuration loaded from file.
+    On macOS, this uses QSettings which stores in ~/Library/Preferences.
 
     Returns:
         Tuple of (output_directory, capture_interval, debug_mode).
     """
-    output_dir: Path = cli_args["output"]
-    interval: int = cli_args["interval"]
-    debug: bool = cli_args["debug"]
+    settings = QSettings("ActivityBeacon", "ActivityBeacon")
 
-    if file_config.get("capture"):
-        capture_config = file_config["capture"]
-        if "interval" in capture_config:
-            interval = capture_config["interval"]
-        if "output" in capture_config:
-            output_dir = Path(capture_config["output"])
+    output_dir = Path(
+        settings.value("capture/output_directory", str(get_default_output_dir()))
+    )
+    interval = int(settings.value("capture/interval_seconds", 30))
+    debug = bool(settings.value("general/debug_mode", defaultValue=False))
 
-    if file_config.get("general"):
-        general_config = file_config["general"]
-        if "debug" in general_config:
-            debug = general_config["debug"]
+    logger.info("Loaded settings from: %s", settings.fileName())
+    logger.debug("  Output directory: %s", output_dir)
+    logger.debug("  Capture interval: %d seconds", interval)
+    logger.debug("  Debug mode: %s", debug)
 
     return output_dir, interval, debug
 
 
-def configure_logging(*, debug_mode: bool, log_dir: Path | None = None) -> None:
+def save_settings(output_dir: Path, interval: int, *, debug_mode: bool) -> None:
+    """Save application settings to OS-native storage.
+
+    Args:
+        output_dir: Output directory for captured data.
+        interval: Capture interval in seconds.
+        debug_mode: Whether debug mode is enabled.
+    """
+    settings = QSettings("ActivityBeacon", "ActivityBeacon")
+    settings.setValue("capture/output_directory", str(output_dir))
+    settings.setValue("capture/interval_seconds", interval)
+    settings.setValue("general/debug_mode", debug_mode)
+    settings.sync()
+
+    logger.info("Settings saved to: %s", settings.fileName())
+
+
+def configure_logging(*, debug_mode: bool) -> None:
     """Configure logging based on debug mode.
 
     Args:
         debug_mode: Whether debug mode is enabled.
-        log_dir: Optional custom log directory.
     """
-    if not debug_mode:
-        log_dir = None
-    elif log_dir is None:
-        log_dir = get_default_log_dir()
-
+    log_dir = get_default_log_dir() if debug_mode else None
     setup_logging(log_dir)
 
     if debug_mode:
@@ -188,51 +110,49 @@ def create_capture_controller(output_dir: Path, interval: int) -> CaptureControl
 
 
 def main() -> NoReturn:
-    """Main entry point for the application."""
-    args = parse_args()
+    """Main entry point for the menu bar application."""
+    # Create QApplication first
+    app = QApplication(sys.argv)
+    app.setApplicationName("ActivityBeacon")
+    app.setOrganizationName("ActivityBeacon")
+    app.setQuitOnLastWindowClosed(False)  # Keep running when windows close
 
-    file_config = load_config(args["config"])
+    # Load settings
+    output_dir, interval, debug = load_settings()
 
-    output_dir, interval, debug = merge_config(args, file_config)
-
+    # Configure logging
     configure_logging(debug_mode=debug)
 
+    # Ensure output directory exists
     output_dir = output_dir.expanduser()
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    logger.info("Starting ActivityBeacon")
+    # Ensure config directory exists
+    config_dir = get_config_path()
+    config_dir.mkdir(parents=True, exist_ok=True)
+
+    logger.info("Starting ActivityBeacon menu bar application")
+    logger.info("Configuration directory: %s", config_dir)
     logger.info("Output directory: %s", output_dir)
     logger.info("Capture interval: %d seconds", interval)
     logger.info("Debug mode: %s", "enabled" if debug else "disabled")
 
+    # Create capture controller
     controller = create_capture_controller(output_dir, interval)
 
-    shutdown_requested = False
+    # Create menu bar controller and wire it to the capture controller
+    menu_bar = MenuBarController(app, controller)
+    menu_bar.show()
 
-    def handle_shutdown(signum: int, frame: object) -> None:  # noqa: ARG001
-        nonlocal shutdown_requested
-        sig_name = signal.Signals(signum).name
-        logger.info("Received %s signal, shutting down gracefully...", sig_name)
-        shutdown_requested = True
+    logger.info("ActivityBeacon menu bar is now active")
 
-    signal.signal(signal.SIGTERM, handle_shutdown)
-    signal.signal(signal.SIGINT, handle_shutdown)
+    # Run the Qt event loop
+    exit_code = app.exec()
 
-    try:
-        controller.start()
-        logger.info("ActivityBeacon is running. Press Ctrl+C to stop.")
-
-        while not shutdown_requested:
-            time.sleep(1.0)
-
-    except Exception as e:  # noqa: BLE001
-        logger.error("Unexpected error: %s", e)
-        controller.stop()
-        sys.exit(1)
-
+    # Clean shutdown
     controller.stop()
     logger.info("Shutdown complete")
-    sys.exit(0)
+    sys.exit(exit_code)
 
 
 if __name__ == "__main__":

@@ -5,14 +5,17 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import QSettings, QTimer
 from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWidgets import QMenu, QSystemTrayIcon
 
+from activity_beacon.daemon.preferences_dialog import PreferencesDialog
 from activity_beacon.logging import get_logger
 
 if TYPE_CHECKING:
     from PyQt6.QtWidgets import QApplication
+
+    from activity_beacon.daemon.capture_controller import CaptureController
 
 logger = get_logger("activity_beacon.daemon.menu_bar_controller")
 
@@ -27,14 +30,18 @@ class MenuBarController:
     - Display current status and statistics
     """
 
-    def __init__(self, app: QApplication) -> None:  # type: ignore[reportMissingSuperCall]
+    def __init__(
+        self, app: QApplication, controller: CaptureController | None = None
+    ) -> None:
         """
         Initialize the menu bar controller.
 
         Args:
             app: The QApplication instance
+            controller: Optional CaptureController to control
         """
         self._app = app
+        self._controller = controller
         self._is_capturing = False
         self._capture_interval_seconds = 30
         self._capture_count = 0
@@ -96,6 +103,11 @@ class MenuBarController:
             )
             config_menu.addAction(action)  # type: ignore[reportUnknownMemberType,reportOptionalMemberAccess]
 
+        # Preferences action
+        preferences_action = QAction("Preferences...")
+        preferences_action.triggered.connect(self._show_preferences)  # type: ignore[reportUnknownMemberType]
+        menu.addAction(preferences_action)  # type: ignore[reportUnknownMemberType]
+
         menu.addSeparator()
 
         # Status display (non-clickable)
@@ -133,8 +145,11 @@ class MenuBarController:
         logger.info("Capture started (interval: %ds)", self._capture_interval_seconds)
         self._update_status_display()
 
-        # TODO: Wire up to actual CaptureController when US-016 is implemented
-        # For now, just track the state
+        # Start the actual capture controller
+        if self._controller:
+            self._controller.start()
+        else:
+            logger.warning("No CaptureController available to start")
 
     def _stop_capture(self) -> None:
         """Stop the capture process."""
@@ -144,7 +159,11 @@ class MenuBarController:
         logger.info("Capture stopped")
         self._update_status_display()
 
-        # TODO: Wire up to actual CaptureController when US-016 is implemented
+        # Stop the actual capture controller
+        if self._controller:
+            self._controller.stop()
+        else:
+            logger.warning("No CaptureController available to stop")
 
     def _set_interval(self, seconds: int) -> None:
         """
@@ -157,13 +176,23 @@ class MenuBarController:
         self._capture_interval_seconds = seconds
         logger.info("Capture interval changed from %ds to %ds", old_interval, seconds)
 
+        # Save to settings
+        settings = QSettings("ActivityBeacon", "ActivityBeacon")
+        settings.setValue("capture/interval_seconds", seconds)
+        settings.sync()
+
         # Update tooltip if currently capturing
         if self._is_capturing:
             self._tray_icon.setToolTip(
                 f"ActivityBeacon - Capturing (every {self._capture_interval_seconds}s)"
             )
 
-        # TODO: Update CaptureController interval when US-016 is implemented
+        # Update the capture controller's interval if it exists
+        if self._controller:
+            # Would need to add update_interval method to CaptureController
+            logger.warning("Interval updated - requires restart to take effect")
+        else:
+            logger.debug("No CaptureController to update")
 
     def _update_status_display(self) -> None:
         """Update the status and statistics display in the menu."""
@@ -187,6 +216,20 @@ class MenuBarController:
         if self._is_capturing:
             self._stop_capture()
         self._app.quit()
+
+    def _show_preferences(self) -> None:
+        """Show the preferences dialog."""
+
+        dialog = PreferencesDialog()
+        if dialog.exec():  # type: ignore[reportUnknownMemberType]
+            logger.info("Preferences saved")
+            # Reload settings if needed
+            settings = QSettings("ActivityBeacon", "ActivityBeacon")
+            self._capture_interval_seconds = int(
+                settings.value("capture/interval_seconds", 30)
+            )
+        else:
+            logger.debug("Preferences dialog cancelled")
 
     def show(self) -> None:
         """Show the system tray icon."""

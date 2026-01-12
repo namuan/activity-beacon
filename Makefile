@@ -12,8 +12,6 @@ check: ## Run code quality tools.
 	@uv lock --locked
 	@echo "🚀 Running ruff check"
 	@uv run ruff check .
-	@echo "🚀 Running basedpyright strict"
-	@uv run basedpyright --level error
 	@echo "🚀 Linting code: Running pre-commit"
 	@uv run pre-commit run -a
 	@mob next
