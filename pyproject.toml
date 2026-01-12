@@ -94,6 +94,9 @@ max-public-methods = 35  # Controller classes may have many handlers (PLR0904)
 "__init__.py" = [
     "F401",    # Allow unused imports in __init__.py
 ]
+"timelapse.py" = [
+    "ALL",     # Ignore all linting rules for this standalone script
+]
 "tests/**/*.py" = [
     "S101",    # Allow assert in tests
     "S106",    # Allow dummy tokens/password-like args
