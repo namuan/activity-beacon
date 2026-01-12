@@ -3,14 +3,16 @@
 from __future__ import annotations
 
 from pathlib import Path
+import subprocess  # noqa: S404
+import sys
 from typing import TYPE_CHECKING
 
 from PyQt6.QtCore import QSettings, QTimer
-from PyQt6.QtGui import QAction, QIcon
+from PyQt6.QtGui import QAction, QColor, QIcon, QPainter, QPixmap
 from PyQt6.QtWidgets import QMenu, QSystemTrayIcon
 
 from activity_beacon.daemon.preferences_dialog import PreferencesDialog
-from activity_beacon.logging import get_logger
+from activity_beacon.logging import get_default_log_dir, get_logger
 
 if TYPE_CHECKING:
     from PyQt6.QtWidgets import QApplication
@@ -46,6 +48,7 @@ class MenuBarController:
         self._capture_interval_seconds = 30
         self._capture_count = 0
         self._last_error_msg: str | None = None
+        self._output_directory: Path | None = None
 
         # Create system tray icon
         self._tray_icon = QSystemTrayIcon()
@@ -61,16 +64,41 @@ class MenuBarController:
 
     def _setup_icon(self) -> None:
         """Set up the system tray icon."""
-        # Try to load the icon from assets
-        icon_path = Path(__file__).parent.parent.parent.parent / "assets" / "icon.icns"
+        # Determine the base path (works in both dev and packaged modes)
+        if getattr(sys, "frozen", False):
+            # Running in a PyInstaller bundle
+            # In a macOS app bundle, resources are in Contents/Resources
+            base_path = Path(sys._MEIPASS)  # type: ignore[attr-defined]
+            # Check both MacOS and Resources locations
+            icon_path = base_path / "assets" / "icon.icns"
+            if not icon_path.exists():
+                # Try the Resources directory (PyInstaller puts data here)
+                base_path = Path(sys.executable).parent.parent / "Resources"
+                icon_path = base_path / "assets" / "icon.icns"
+        else:
+            # Running in development mode
+            base_path = Path(__file__).parent.parent.parent.parent
+            icon_path = base_path / "assets" / "icon.icns"
+
+        icon = QIcon()
+
         if icon_path.exists():
             icon = QIcon(str(icon_path))
-            self._tray_icon.setIcon(icon)
             logger.debug("Loaded icon from %s", icon_path)
-        else:
-            # Fall back to a system icon
-            logger.warning("Icon not found at %s, using default", icon_path)
 
+        # If icon is still null/empty, create a simple colored icon as fallback
+        if icon.isNull():
+            pixmap = QPixmap(64, 64)
+            pixmap.fill(QColor("transparent"))
+            painter = QPainter(pixmap)
+            painter.setBrush(QColor("#4A90E2"))
+            painter.setPen(QColor("#2E5C8A"))
+            painter.drawEllipse(8, 8, 48, 48)
+            painter.end()
+            icon = QIcon(pixmap)
+            logger.warning("Icon not found at %s, using fallback", icon_path)
+
+        self._tray_icon.setIcon(icon)
         self._tray_icon.setToolTip("ActivityBeacon - Not Running")
 
     def _setup_menu(self) -> None:
@@ -78,7 +106,7 @@ class MenuBarController:
         menu = QMenu()
 
         # Start/Stop action
-        self._start_stop_action = QAction("Start Capture")
+        self._start_stop_action = QAction("Start Capture", menu)
         self._start_stop_action.triggered.connect(self._toggle_capture)  # type: ignore[reportUnknownMemberType]
         menu.addAction(self._start_stop_action)  # type: ignore[reportUnknownMemberType]
 
@@ -97,32 +125,43 @@ class MenuBarController:
         ]
 
         for label, seconds in intervals:
-            action = QAction(label)
+            action = QAction(label, menu)
             action.triggered.connect(  # type: ignore[reportUnknownMemberType]
                 lambda _checked=False, s=seconds: self._set_interval(s)
             )
             config_menu.addAction(action)  # type: ignore[reportUnknownMemberType,reportOptionalMemberAccess]
 
         # Preferences action
-        preferences_action = QAction("Preferences...")
+        preferences_action = QAction("Preferences...", menu)
         preferences_action.triggered.connect(self._show_preferences)  # type: ignore[reportUnknownMemberType]
         menu.addAction(preferences_action)  # type: ignore[reportUnknownMemberType]
 
         menu.addSeparator()
 
+        # Open folders actions
+        open_screenshots_action = QAction("Open Screenshots Folder", menu)
+        open_screenshots_action.triggered.connect(self._open_screenshots_folder)  # type: ignore[reportUnknownMemberType]
+        menu.addAction(open_screenshots_action)  # type: ignore[reportUnknownMemberType]
+
+        open_logs_action = QAction("Open Logs Folder", menu)
+        open_logs_action.triggered.connect(self._open_logs_folder)  # type: ignore[reportUnknownMemberType]
+        menu.addAction(open_logs_action)  # type: ignore[reportUnknownMemberType]
+
+        menu.addSeparator()
+
         # Status display (non-clickable)
-        self._status_action = QAction("Status: Not Running")
+        self._status_action = QAction("Status: Not Running", menu)
         self._status_action.setEnabled(False)
         menu.addAction(self._status_action)  # type: ignore[reportUnknownMemberType]
 
-        self._stats_action = QAction("Captures: 0")
+        self._stats_action = QAction("Captures: 0", menu)
         self._stats_action.setEnabled(False)
         menu.addAction(self._stats_action)  # type: ignore[reportUnknownMemberType]
 
         menu.addSeparator()
 
         # Quit action
-        quit_action = QAction("Quit")
+        quit_action = QAction("Quit ActivityBeacon", menu)
         quit_action.triggered.connect(self._quit_application)  # type: ignore[reportUnknownMemberType]
         menu.addAction(quit_action)  # type: ignore[reportUnknownMemberType]
 
@@ -231,6 +270,43 @@ class MenuBarController:
         else:
             logger.debug("Preferences dialog cancelled")
 
+    def _open_screenshots_folder(self) -> None:
+        """Open the screenshots folder in Finder."""
+        if self._output_directory is None:
+            # Try to get it from settings
+            settings = QSettings("ActivityBeacon", "ActivityBeacon")
+            output_dir_str = settings.value("capture/output_directory")
+            if output_dir_str:
+                self._output_directory = Path(output_dir_str)
+
+        if self._output_directory and self._output_directory.exists():
+            subprocess.run(["open", str(self._output_directory)], check=False)
+            logger.info("Opened screenshots folder: %s", self._output_directory)
+        else:
+            logger.warning("Screenshots folder not found or not set")
+            self._tray_icon.showMessage(
+                "ActivityBeacon",
+                "Screenshots folder not found. Start capturing to create it.",
+                QSystemTrayIcon.MessageIcon.Warning,
+                3000,
+            )
+
+    def _open_logs_folder(self) -> None:
+        """Open the logs folder in Finder."""
+        log_dir = get_default_log_dir()
+
+        if log_dir.exists():
+            subprocess.run(["open", str(log_dir)], check=False)
+            logger.info("Opened logs folder: %s", log_dir)
+        else:
+            logger.warning("Logs folder not found: %s", log_dir)
+            self._tray_icon.showMessage(
+                "ActivityBeacon",
+                "Logs folder not found. Enable debug mode in preferences to create logs.",
+                QSystemTrayIcon.MessageIcon.Warning,
+                3000,
+            )
+
     def show(self) -> None:
         """Show the system tray icon."""
         self._tray_icon.show()
@@ -260,6 +336,15 @@ class MenuBarController:
         """Increment the capture counter (called by CaptureController)."""
         self._capture_count += 1
         self._update_status_display()
+
+    def set_output_directory(self, output_dir: Path) -> None:
+        """Set the output directory for screenshots.
+
+        Args:
+            output_dir: Path to the output directory.
+        """
+        self._output_directory = output_dir
+        logger.debug("Output directory set to: %s", output_dir)
 
     def set_error(self, error_msg: str) -> None:
         """

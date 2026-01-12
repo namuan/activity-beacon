@@ -82,7 +82,7 @@ def configure_logging(*, debug_mode: bool) -> None:
     Args:
         debug_mode: Whether debug mode is enabled.
     """
-    log_dir = get_default_log_dir() if debug_mode else None
+    log_dir = get_default_log_dir()
     setup_logging(log_dir)
 
     if debug_mode:
@@ -142,6 +142,7 @@ def main() -> NoReturn:
 
     # Create menu bar controller and wire it to the capture controller
     menu_bar = MenuBarController(app, controller)
+    menu_bar.set_output_directory(output_dir)
     menu_bar.show()
 
     logger.info("ActivityBeacon menu bar is now active")

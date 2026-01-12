@@ -47,7 +47,7 @@ class MainWindow(QMainWindow):
         self._current_date: QDate | None = None
         self._progress: QProgressBar | None = None
 
-        self.setWindowTitle("Daily Progress Viewer")
+        self.setWindowTitle("Activity Beacon")
         with contextlib.suppress(Exception):
             self.setWindowIcon(
                 self.style().standardIcon(QStyle.StandardPixmap.SP_ComputerIcon)
@@ -199,7 +199,7 @@ class MainWindow(QMainWindow):
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Daily Progress Viewer")
+    parser = argparse.ArgumentParser(description="Activity Beacon")
     parser.add_argument(
         "--base-dir",
         "-b",
@@ -209,13 +209,13 @@ def main() -> None:
     args = parser.parse_args()
 
     app = QApplication(sys.argv)
-    app.setApplicationName("Daily Progress Viewer")
+    app.setApplicationName("Activity Beacon")
     with contextlib.suppress(Exception):
         app.setWindowIcon(
             QApplication.style().standardIcon(QStyle.StandardPixmap.SP_ComputerIcon)
         )
 
-    log_dir = Path.home() / ".logs" / "daily_progress_viewer"
+    log_dir = Path.home() / ".logs" / "activity_beacon"
     log_dir.mkdir(parents=True, exist_ok=True)
     log_file = log_dir / f"viewer_{datetime.now().strftime("%Y%m%d")}.log"
     logger = logging.getLogger()
