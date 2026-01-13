@@ -7,7 +7,7 @@ import subprocess  # noqa: S404
 import sys
 from typing import TYPE_CHECKING
 
-from PyQt6.QtCore import QSettings, QTimer
+from PyQt6.QtCore import QSettings
 from PyQt6.QtGui import QAction, QColor, QIcon, QPainter, QPixmap
 from PyQt6.QtWidgets import QMenu, QSystemTrayIcon
 
@@ -46,19 +46,13 @@ class MenuBarController:
         self._controller = controller
         self._is_capturing = False
         self._capture_interval_seconds = 30
-        self._capture_count = 0
-        self._last_error_msg: str | None = None
         self._output_directory: Path | None = None
+        self._viewer_window = None  # Lazy-loaded viewer window
 
         # Create system tray icon
         self._tray_icon = QSystemTrayIcon()
         self._setup_icon()
         self._setup_menu()
-
-        # Timer for periodic updates (update status every 5 seconds)
-        self._update_timer = QTimer()
-        self._update_timer.timeout.connect(self._update_status_display)  # type: ignore[reportUnknownMemberType]
-        self._update_timer.start(5000)  # 5 seconds
 
         logger.info("MenuBarController initialized")
 
@@ -138,6 +132,13 @@ class MenuBarController:
 
         menu.addSeparator()
 
+        # Open viewer action
+        open_viewer_action = QAction("Open Viewer", menu)
+        open_viewer_action.triggered.connect(self._open_viewer)  # type: ignore[reportUnknownMemberType]
+        menu.addAction(open_viewer_action)  # type: ignore[reportUnknownMemberType]
+
+        menu.addSeparator()
+
         # Open folders actions
         open_screenshots_action = QAction("Open Screenshots Folder", menu)
         open_screenshots_action.triggered.connect(self._open_screenshots_folder)  # type: ignore[reportUnknownMemberType]
@@ -146,17 +147,6 @@ class MenuBarController:
         open_logs_action = QAction("Open Logs Folder", menu)
         open_logs_action.triggered.connect(self._open_logs_folder)  # type: ignore[reportUnknownMemberType]
         menu.addAction(open_logs_action)  # type: ignore[reportUnknownMemberType]
-
-        menu.addSeparator()
-
-        # Status display (non-clickable)
-        self._status_action = QAction("Status: Not Running", menu)
-        self._status_action.setEnabled(False)
-        menu.addAction(self._status_action)  # type: ignore[reportUnknownMemberType]
-
-        self._stats_action = QAction("Captures: 0", menu)
-        self._stats_action.setEnabled(False)
-        menu.addAction(self._stats_action)  # type: ignore[reportUnknownMemberType]
 
         menu.addSeparator()
 
@@ -182,7 +172,6 @@ class MenuBarController:
             f"ActivityBeacon - Capturing (every {self._capture_interval_seconds}s)"
         )
         logger.info("Capture started (interval: %ds)", self._capture_interval_seconds)
-        self._update_status_display()
 
         # Start the actual capture controller
         if self._controller:
@@ -196,7 +185,6 @@ class MenuBarController:
         self._start_stop_action.setText("Start Capture")
         self._tray_icon.setToolTip("ActivityBeacon - Not Running")
         logger.info("Capture stopped")
-        self._update_status_display()
 
         # Stop the actual capture controller
         if self._controller:
@@ -232,22 +220,6 @@ class MenuBarController:
             logger.warning("Interval updated - requires restart to take effect")
         else:
             logger.debug("No CaptureController to update")
-
-    def _update_status_display(self) -> None:
-        """Update the status and statistics display in the menu."""
-        if self._is_capturing:
-            status_text = f"Status: Capturing (every {self._capture_interval_seconds}s)"
-        else:
-            status_text = "Status: Not Running"
-
-        self._status_action.setText(status_text)
-        self._stats_action.setText(f"Captures: {self._capture_count}")
-
-        if self._last_error_msg:
-            # Show error in tooltip
-            self._tray_icon.setToolTip(
-                f"ActivityBeacon - Error: {self._last_error_msg}"
-            )
 
     def _quit_application(self) -> None:
         """Quit the application."""
@@ -307,6 +279,51 @@ class MenuBarController:
                 3000,
             )
 
+    def _open_viewer(self) -> None:
+        """Launch the viewer application."""
+        try:
+            # If viewer window already exists and is visible, just raise it
+            if self._viewer_window is not None:
+                self._viewer_window.show()
+                self._viewer_window.raise_()
+                self._viewer_window.activateWindow()
+                logger.info("Viewer window raised to front")
+                return
+
+            # Lazy import to avoid circular dependency
+            from activity_beacon.viewer.main import (  # noqa: PLC0415
+                MainWindow as ViewerMainWindow,
+            )
+
+            # Get the output directory from settings
+            settings = QSettings("ActivityBeacon", "ActivityBeacon")
+            output_dir_str = settings.value("capture/output_directory")
+
+            if output_dir_str:
+                base_dir = Path(output_dir_str)
+            else:
+                base_dir = Path.home() / "Documents" / "Screenshots"
+
+            # Create and show the viewer window
+            self._viewer_window = ViewerMainWindow(base_dir=base_dir)
+            self._viewer_window.show()
+            logger.info("Launched viewer application")
+
+            self._tray_icon.showMessage(
+                "ActivityBeacon",
+                "Viewer application opened",
+                QSystemTrayIcon.MessageIcon.Information,
+                2000,
+            )
+        except (ImportError, OSError, RuntimeError) as e:
+            logger.error("Failed to launch viewer: %s", e)
+            self._tray_icon.showMessage(
+                "ActivityBeacon",
+                f"Failed to launch viewer: {e}",
+                QSystemTrayIcon.MessageIcon.Critical,
+                3000,
+            )
+
     def show(self) -> None:
         """Show the system tray icon."""
         self._tray_icon.show()
@@ -327,16 +344,6 @@ class MenuBarController:
         """Return the current capture interval in seconds."""
         return self._capture_interval_seconds
 
-    @property
-    def capture_count(self) -> int:
-        """Return the total number of captures."""
-        return self._capture_count
-
-    def increment_capture_count(self) -> None:
-        """Increment the capture counter (called by CaptureController)."""
-        self._capture_count += 1
-        self._update_status_display()
-
     def set_output_directory(self, output_dir: Path) -> None:
         """Set the output directory for screenshots.
 
@@ -345,19 +352,3 @@ class MenuBarController:
         """
         self._output_directory = output_dir
         logger.debug("Output directory set to: %s", output_dir)
-
-    def set_error(self, error_msg: str) -> None:
-        """
-        Set an error message to display.
-
-        Args:
-            error_msg: The error message to display
-        """
-        self._last_error_msg = error_msg
-        self._update_status_display()
-        logger.error("Error set: %s", error_msg)
-
-    def clear_error(self) -> None:
-        """Clear the error message."""
-        self._last_error_msg = None
-        self._update_status_display()
