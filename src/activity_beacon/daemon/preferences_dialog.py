@@ -17,7 +17,6 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QPushButton,
     QSizePolicy,
-    QSpinBox,
     QVBoxLayout,
 )
 
@@ -59,7 +58,6 @@ class PreferencesDialog(QDialog):
         self._output_dir = self._settings.value(
             "capture/output_directory", default_output
         )
-        self._interval = int(self._settings.value("capture/interval_seconds", 30))
         self._debug_mode = bool(
             self._settings.value("general/debug_mode", defaultValue=False)
         )
@@ -115,17 +113,6 @@ class PreferencesDialog(QDialog):
         output_layout.addWidget(self._output_edit)
         output_layout.addWidget(browse_button)
         capture_layout.addRow("Output Directory:", output_layout)
-
-        # Capture interval
-        self._interval_spin = QSpinBox()
-        self._interval_spin.setMinimum(5)
-        self._interval_spin.setMaximum(3600)
-        self._interval_spin.setSuffix(" seconds")
-        self._interval_spin.setValue(self._interval)
-        self._interval_spin.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
-        )
-        capture_layout.addRow("Capture Interval:", self._interval_spin)
 
         capture_group.setLayout(capture_layout)
         return capture_group
@@ -183,7 +170,6 @@ class PreferencesDialog(QDialog):
         """Save settings and close dialog."""
         # Save to QSettings
         self._settings.setValue("capture/output_directory", self._output_edit.text())
-        self._settings.setValue("capture/interval_seconds", self._interval_spin.value())
         self._settings.setValue(
             "capture/auto_start", self._auto_start_checkbox.isChecked()
         )
@@ -192,7 +178,6 @@ class PreferencesDialog(QDialog):
 
         logger.info("Settings saved:")
         logger.info("  Output directory: %s", self._output_edit.text())
-        logger.info("  Capture interval: %d seconds", self._interval_spin.value())
         logger.info("  Auto-start capture: %s", self._auto_start_checkbox.isChecked())
         logger.info("  Debug mode: %s", self._debug_checkbox.isChecked())
 

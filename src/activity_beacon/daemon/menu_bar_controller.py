@@ -45,7 +45,16 @@ class MenuBarController:
         self._app = app
         self._controller = controller
         self._is_capturing = False
-        self._capture_interval_seconds = 30
+
+        # Load capture interval from settings (or use controller's interval)
+        if controller:
+            self._capture_interval_seconds = controller.capture_interval_seconds
+        else:
+            settings = QSettings("ActivityBeacon", "ActivityBeacon")
+            self._capture_interval_seconds = int(
+                settings.value("capture/interval_seconds", 30)
+            )
+
         self._output_directory: Path | None = None
         self._viewer_window = None  # Lazy-loaded viewer window
 
@@ -54,7 +63,10 @@ class MenuBarController:
         self._setup_icon()
         self._setup_menu()
 
-        logger.info("MenuBarController initialized")
+        logger.info(
+            "MenuBarController initialized with interval: %ds",
+            self._capture_interval_seconds,
+        )
 
     def _setup_icon(self) -> None:
         """Set up the system tray icon."""
@@ -118,12 +130,20 @@ class MenuBarController:
             ("300 seconds (5 minutes)", 300),
         ]
 
+        # Store interval actions for later reference
+        self._interval_actions: dict[int, QAction] = {}
+
         for label, seconds in intervals:
             action = QAction(label, menu)
+            action.setCheckable(True)
+            # Check if this is the current interval
+            if seconds == self._capture_interval_seconds:
+                action.setChecked(True)
             action.triggered.connect(  # type: ignore[reportUnknownMemberType]
                 lambda _checked=False, s=seconds: self._set_interval(s)
             )
             config_menu.addAction(action)  # type: ignore[reportUnknownMemberType,reportOptionalMemberAccess]
+            self._interval_actions[seconds] = action
 
         # Preferences action
         preferences_action = QAction("Preferences...", menu)
@@ -203,6 +223,10 @@ class MenuBarController:
         self._capture_interval_seconds = seconds
         logger.info("Capture interval changed from %ds to %ds", old_interval, seconds)
 
+        # Update interval action checkmarks
+        for interval_seconds, action in self._interval_actions.items():
+            action.setChecked(interval_seconds == seconds)
+
         # Save to settings
         settings = QSettings("ActivityBeacon", "ActivityBeacon")
         settings.setValue("capture/interval_seconds", seconds)
@@ -216,8 +240,8 @@ class MenuBarController:
 
         # Update the capture controller's interval if it exists
         if self._controller:
-            # Would need to add update_interval method to CaptureController
-            logger.warning("Interval updated - requires restart to take effect")
+            self._controller.set_capture_interval(seconds)
+            logger.info("Capture controller interval updated to %ds", seconds)
         else:
             logger.debug("No CaptureController to update")
 
