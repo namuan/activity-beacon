@@ -146,7 +146,7 @@ def mock_window_enumerator(sample_windows: tuple[WindowInfo, ...]) -> MagicMock:
 
 @pytest.fixture(scope="function")
 def mock_date_directory_manager(
-    _tmp_path: Path, temp_output_dir: Path
+    temp_output_dir: Path,
 ) -> Generator[MagicMock, None, None]:
     """Create a mock DateDirectoryManager."""
     mock = MagicMock(spec=DateDirectoryManager)

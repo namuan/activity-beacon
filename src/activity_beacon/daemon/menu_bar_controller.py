@@ -352,3 +352,13 @@ class MenuBarController:
         """
         self._output_directory = output_dir
         logger.debug("Output directory set to: %s", output_dir)
+
+    def start_capture_if_not_running(self) -> None:
+        """Start capture if it's not already running.
+
+        This is used for auto-start functionality.
+        """
+        if not self._is_capturing:
+            self._start_capture()
+        else:
+            logger.debug("Capture already running, skipping auto-start")

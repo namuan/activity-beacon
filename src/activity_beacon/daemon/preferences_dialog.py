@@ -63,6 +63,9 @@ class PreferencesDialog(QDialog):
         self._debug_mode = bool(
             self._settings.value("general/debug_mode", defaultValue=False)
         )
+        self._auto_start = bool(
+            self._settings.value("capture/auto_start", defaultValue=False)
+        )
 
     def _setup_ui(self) -> None:
         """Set up the user interface."""
@@ -140,6 +143,11 @@ class PreferencesDialog(QDialog):
             QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow
         )
 
+        # Auto-start capture
+        self._auto_start_checkbox = QCheckBox()
+        self._auto_start_checkbox.setChecked(self._auto_start)
+        general_layout.addRow("Auto-start Capture:", self._auto_start_checkbox)
+
         # Debug mode
         self._debug_checkbox = QCheckBox()
         self._debug_checkbox.setChecked(self._debug_mode)
@@ -176,12 +184,16 @@ class PreferencesDialog(QDialog):
         # Save to QSettings
         self._settings.setValue("capture/output_directory", self._output_edit.text())
         self._settings.setValue("capture/interval_seconds", self._interval_spin.value())
+        self._settings.setValue(
+            "capture/auto_start", self._auto_start_checkbox.isChecked()
+        )
         self._settings.setValue("general/debug_mode", self._debug_checkbox.isChecked())
         self._settings.sync()
 
         logger.info("Settings saved:")
         logger.info("  Output directory: %s", self._output_edit.text())
         logger.info("  Capture interval: %d seconds", self._interval_spin.value())
+        logger.info("  Auto-start capture: %s", self._auto_start_checkbox.isChecked())
         logger.info("  Debug mode: %s", self._debug_checkbox.isChecked())
 
         self.accept()

@@ -33,7 +33,7 @@ def get_default_output_dir() -> Path:
     return Path.home() / "Documents" / "ActivityBeacon" / "data"
 
 
-def load_settings(logger: logging_module.Logger) -> tuple[Path, int, bool]:
+def load_settings(logger: logging_module.Logger) -> tuple[Path, int, bool, bool]:
     """Load application settings from OS-native storage.
 
     On macOS, this uses QSettings which stores in ~/Library/Preferences.
@@ -42,7 +42,7 @@ def load_settings(logger: logging_module.Logger) -> tuple[Path, int, bool]:
         logger: Logger instance for logging settings load.
 
     Returns:
-        Tuple of (output_directory, capture_interval, debug_mode).
+        Tuple of (output_directory, capture_interval, debug_mode, auto_start).
     """
     settings = QSettings("ActivityBeacon", "ActivityBeacon")
 
@@ -51,13 +51,15 @@ def load_settings(logger: logging_module.Logger) -> tuple[Path, int, bool]:
     )
     interval = int(settings.value("capture/interval_seconds", 30))
     debug = bool(settings.value("general/debug_mode", defaultValue=False))
+    auto_start = bool(settings.value("capture/auto_start", defaultValue=True))
 
     logger.info("Loaded settings from: %s", settings.fileName())
     logger.debug("  Output directory: %s", output_dir)
     logger.debug("  Capture interval: %d seconds", interval)
+    logger.debug("  Auto-start capture: %s", auto_start)
     logger.debug("  Debug mode: %s", debug)
 
-    return output_dir, interval, debug
+    return output_dir, interval, debug, auto_start
 
 
 def save_settings(
@@ -134,7 +136,7 @@ def main() -> NoReturn:
     logger = configure_logging(debug_mode=False)
 
     # Load settings
-    output_dir, interval, debug = load_settings(logger)
+    output_dir, interval, debug, auto_start = load_settings(logger)
 
     # Reconfigure logging if debug mode was enabled
     if debug:
@@ -161,6 +163,11 @@ def main() -> NoReturn:
     menu_bar = MenuBarController(app, controller)
     menu_bar.set_output_directory(output_dir)
     menu_bar.show()
+
+    # Auto-start capture if enabled
+    if auto_start:
+        logger.info("Auto-starting capture (enabled in settings)")
+        menu_bar.start_capture_if_not_running()
 
     logger.info("ActivityBeacon menu bar is now active")
 
