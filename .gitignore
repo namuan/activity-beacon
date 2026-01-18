@@ -5,6 +5,7 @@ crash.log
 uncompressed.py
 build/
 dist/
+htmlcov/
 __pycache__/
 *.pyc
 *.egg-info/
