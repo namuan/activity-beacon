@@ -100,6 +100,35 @@ Notes:
 - The batch script and `make timelapses` skip existing outputs by default; set `OVERWRITE=true` to regenerate.
 - `BASE_DIR` and `FPS` default to the values shown.
 
+## Vision OCR (Independent)
+
+- `vision-ocr.py` can run independently on files, directories, one day, or all days.
+- Directory inputs are scanned recursively for video files.
+- JSON output is written next to each processed input as `.ocr.json`.
+
+Commands:
+- `uv run vision-ocr.py /path/to/video.mp4 --dynamic --json`
+- `uv run vision-ocr.py /path/to/day-dir --dynamic --json --skip-existing`
+- `uv run vision-ocr.py --base-dir "$HOME/Documents/Screenshots" --date YYYY-MM-DD --dynamic --json --skip-existing`
+- `uv run vision-ocr.py --base-dir "$HOME/Documents/Screenshots" --dynamic --json --skip-existing`
+
+Batch script:
+- `./scripts/generate_ocr.sh` runs OCR independently from timelapse generation.
+- Defaults: recursive scan under `BASE_DIR`, JSON output enabled, skip existing `.ocr.json` files.
+
+```shell
+./scripts/generate_ocr.sh --date 2025-10-21 -- --dynamic
+```
+```shell
+./scripts/generate_ocr.sh -- --dynamic --change-threshold 0.02
+```
+
+Make targets:
+- Single day:
+  - `make ocr-day DATE=YYYY-MM-DD [BASE_DIR=~/Documents/Screenshots] [FORCE=true]`
+- All days:
+  - `make ocr-all [BASE_DIR=~/Documents/Screenshots] [FORCE=true]`
+
 ## Requirements
 
 - Python 3.x

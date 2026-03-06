@@ -61,9 +61,18 @@ setup: ## One command setup
 	@echo "Installation completed"
 
 ICON_PNG ?= assets/$(PROJECTNAME)-icon.png
+BASE_DIR ?= $(HOME)/Documents/Screenshots
+FORCE ?= false
 
 icons: ## Generate ICNS and ICO files from the PNG logo
 	@bash assets/generate-icons.sh $(ICON_PNG)
+
+ocr-day: ## Run Vision OCR for one day (usage: make ocr-day DATE=YYYY-MM-DD [BASE_DIR=...] [FORCE=true])
+	@if [ -z "$(DATE)" ]; then echo "DATE is required (YYYY-MM-DD)"; exit 1; fi
+	@./scripts/generate_ocr.sh --base-dir "$(BASE_DIR)" --date "$(DATE)" $(if $(filter true,$(FORCE)),--force,)
+
+ocr-all: ## Run Vision OCR for all videos under BASE_DIR (usage: make ocr-all [BASE_DIR=...] [FORCE=true])
+	@./scripts/generate_ocr.sh --base-dir "$(BASE_DIR)" $(if $(filter true,$(FORCE)),--force,)
 
 .PHONY: help
 help:
